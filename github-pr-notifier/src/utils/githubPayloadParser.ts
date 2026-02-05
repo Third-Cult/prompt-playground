@@ -65,3 +65,115 @@ export function isPRClosedEvent(payload: any): boolean {
 export function isPRMerged(payload: any): boolean {
   return payload.pull_request?.merged === true;
 }
+
+/**
+ * Check if payload is a PR converted to draft event
+ */
+export function isPRConvertedToDraft(payload: any): boolean {
+  return payload.action === 'converted_to_draft';
+}
+
+/**
+ * Check if payload is a PR ready for review event
+ */
+export function isPRReadyForReview(payload: any): boolean {
+  return payload.action === 'ready_for_review';
+}
+
+/**
+ * Extract who closed/merged the PR
+ */
+export function extractClosedBy(payload: any): string {
+  return payload.pull_request?.merged_by?.login || payload.sender?.login || 'unknown';
+}
+
+/**
+ * Check if payload is a PR reopened event
+ */
+export function isPRReopenedEvent(payload: any): boolean {
+  return payload.action === 'reopened';
+}
+
+/**
+ * Check if payload is a review_requested event
+ */
+export function isReviewRequestedEvent(payload: any): boolean {
+  return payload.action === 'review_requested';
+}
+
+/**
+ * Check if payload is a review_request_removed event
+ */
+export function isReviewRequestRemovedEvent(payload: any): boolean {
+  return payload.action === 'review_request_removed';
+}
+
+/**
+ * Extract requested reviewer from review_requested/review_request_removed event
+ */
+export function extractRequestedReviewer(payload: any): string {
+  return payload.requested_reviewer?.login || 'unknown';
+}
+
+/**
+ * Check if payload is from pull_request_review webhook
+ */
+export function isPullRequestReviewEvent(payload: any): boolean {
+  return payload.review !== undefined;
+}
+
+/**
+ * Check if review is "changes_requested"
+ */
+export function isReviewChangesRequested(payload: any): boolean {
+  return payload.review?.state === 'changes_requested';
+}
+
+/**
+ * Check if review is "approved"
+ */
+export function isReviewApproved(payload: any): boolean {
+  return payload.review?.state === 'approved';
+}
+
+/**
+ * Check if review is "commented"
+ */
+export function isReviewCommented(payload: any): boolean {
+  return payload.review?.state === 'commented';
+}
+
+/**
+ * Check if review was dismissed
+ */
+export function isReviewDismissed(payload: any): boolean {
+  return payload.action === 'dismissed';
+}
+
+/**
+ * Extract review data from pull_request_review webhook
+ */
+export function extractReviewData(payload: any): {
+  id: number;
+  reviewer: string;
+  state: 'approved' | 'changes_requested' | 'commented' | 'dismissed';
+  comment: string;
+  submittedAt: Date;
+} {
+  const review = payload.review;
+  
+  return {
+    id: review.id,
+    reviewer: review.user.login,
+    state: payload.action === 'dismissed' ? 'dismissed' : review.state,
+    comment: review.body || '',
+    submittedAt: new Date(review.submitted_at),
+  };
+}
+
+/**
+ * Extract PR number from any webhook payload
+ */
+export function extractPRNumber(payload: any): number {
+  return payload.pull_request?.number || 0;
+}

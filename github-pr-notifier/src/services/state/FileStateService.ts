@@ -41,10 +41,16 @@ export class FileStateService implements IStateService {
         // Reconstruct maps
         Object.entries(data.prStates || {}).forEach(([prNumber, state]) => {
           const prNum = parseInt(prNumber, 10);
-          this.prStates.set(prNum, state as PRStateData);
+          const prState = state as PRStateData;
+          
+          // Migrate: add addedThreadMembers if missing (for backwards compatibility)
+          if (!prState.addedThreadMembers) {
+            prState.addedThreadMembers = [];
+          }
+          
+          this.prStates.set(prNum, prState);
 
           // Build reverse lookup
-          const prState = state as PRStateData;
           if (prState.discordMessageId) {
             this.messageIdToPR.set(prState.discordMessageId, prNum);
           }

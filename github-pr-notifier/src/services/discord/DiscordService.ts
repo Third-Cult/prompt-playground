@@ -21,7 +21,7 @@ export class DiscordService implements IDiscordService {
       intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
+        // Note: MessageContent is NOT needed - we only send messages, don't read them
       ],
     });
 
@@ -152,6 +152,35 @@ export class DiscordService implements IDiscordService {
   }
 
   /**
+   * Remove reaction from message
+   */
+  async removeReaction(channelId: string, messageId: string, emoji: string): Promise<void> {
+    try {
+      const channel = await this.client.channels.fetch(channelId);
+      
+      if (!channel || !channel.isTextBased()) {
+        throw new Error(`Channel ${channelId} not found or not text-based`);
+      }
+
+      const message = await (channel as TextChannel).messages.fetch(messageId);
+      
+      // Remove bot's own reaction
+      const userReactions = message.reactions.cache.filter(reaction => 
+        reaction.emoji.name === emoji && reaction.me
+      );
+      
+      for (const reaction of userReactions.values()) {
+        await reaction.users.remove(this.client.user!.id);
+      }
+
+      logger.debug(`Removed reaction ${emoji} from message ${messageId}`);
+    } catch (error) {
+      logger.error(`Failed to remove reaction from message ${messageId}: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  /**
    * Create thread from message
    */
   async createThread(channelId: string, messageId: string, name: string): Promise<string> {
@@ -240,7 +269,7 @@ export class DiscordService implements IDiscordService {
   /**
    * Lock thread
    */
-  async lockThread(threadId: string): Promise<void> {
+  async lockThread(threadId: string, locked: boolean = true): Promise<void> {
     try {
       const thread = await this.client.channels.fetch(threadId);
       
@@ -248,11 +277,38 @@ export class DiscordService implements IDiscordService {
         throw new Error(`Thread ${threadId} not found`);
       }
 
-      await (thread as ThreadChannel).setLocked(true);
+      await (thread as ThreadChannel).setLocked(locked);
 
-      logger.debug(`Locked thread ${threadId}`);
+      logger.debug(`${locked ? 'Locked' : 'Unlocked'} thread ${threadId}`);
     } catch (error) {
-      logger.error(`Failed to lock thread ${threadId}: ${(error as Error).message}`);
+      logger.error(`Failed to ${locked ? 'lock' : 'unlock'} thread ${threadId}: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all members in a thread
+   */
+  async getThreadMembers(threadId: string): Promise<string[]> {
+    try {
+      const thread = await this.client.channels.fetch(threadId);
+      
+      if (!thread || !thread.isThread()) {
+        throw new Error(`Thread ${threadId} not found`);
+      }
+
+      const threadChannel = thread as ThreadChannel;
+      const members = await threadChannel.members.fetch();
+      
+      // Return array of user IDs, excluding the bot itself
+      const userIds = members
+        .filter(member => member.id !== this.client.user?.id)
+        .map(member => member.id);
+
+      logger.debug(`Found ${userIds.length} members in thread ${threadId}`);
+      return userIds;
+    } catch (error) {
+      logger.error(`Failed to get thread members ${threadId}: ${(error as Error).message}`);
       throw error;
     }
   }

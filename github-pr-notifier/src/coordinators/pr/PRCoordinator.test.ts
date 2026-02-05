@@ -27,11 +27,13 @@ describe('PRCoordinator', () => {
       sendMessage: jest.fn().mockResolvedValue('msg-123'),
       editMessage: jest.fn().mockResolvedValue(undefined),
       addReaction: jest.fn().mockResolvedValue(undefined),
+      removeReaction: jest.fn().mockResolvedValue(undefined),
       createThread: jest.fn().mockResolvedValue('thread-123'),
       sendThreadMessage: jest.fn().mockResolvedValue('thread-msg-123'),
       addThreadMember: jest.fn().mockResolvedValue(undefined),
       removeThreadMember: jest.fn().mockResolvedValue(undefined),
       lockThread: jest.fn().mockResolvedValue(undefined),
+      getThreadMembers: jest.fn().mockResolvedValue([]),
       isReady: jest.fn().mockReturnValue(true),
       cleanup: jest.fn().mockResolvedValue(undefined),
     };
@@ -43,10 +45,16 @@ describe('PRCoordinator', () => {
       prepareThreadCreatedMessage: jest.fn().mockReturnValue('Thread message'),
     } as any;
 
+    const mockUserMappingManager = {
+      getDiscordUserId: jest.fn().mockReturnValue('12345'),
+      getDiscordMention: jest.fn((username: string) => `@${username}`),
+    } as any;
+
     coordinator = new PRCoordinator(
       mockStateService,
       mockDiscordService,
       mockNotificationManager,
+      mockUserMappingManager,
       testChannelId
     );
   });
@@ -144,6 +152,7 @@ describe('PRCoordinator', () => {
           isDraft: false,
           discordMessageId: 'msg-123',
           discordThreadId: 'thread-123',
+          addedThreadMembers: [],
         })
       );
     });

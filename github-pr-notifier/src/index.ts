@@ -80,6 +80,7 @@ async function main() {
         stateService,
         discordService,
         notificationManager,
+        userMappingManager,
         config.discord.channelId
       );
       logger.info('PRCoordinator initialized');

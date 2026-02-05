@@ -28,6 +28,7 @@ export interface PRStateData {
   reviews: Review[];
   discordMessageId: string | null;
   discordThreadId: string | null;
+  addedThreadMembers: string[]; // Discord user IDs we explicitly added to thread
   createdAt: Date;
   updatedAt: Date;
 }

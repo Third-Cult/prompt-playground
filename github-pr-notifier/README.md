@@ -5,7 +5,8 @@ A webhook server that automatically posts GitHub Pull Request notifications to D
 ## Current Status
 
 **Phase 1: Foundation** ✅ Complete  
-**Phase 2: PR Creation** ✅ Complete
+**Phase 2: PR Creation** ✅ Complete  
+**Phase 3: Status Management** ✅ Complete
 
 ### Features Implemented
 
@@ -27,6 +28,14 @@ A webhook server that automatically posts GitHub Pull Request notifications to D
 - ✅ User mapping (GitHub → Discord usernames)
 - ✅ NotificationManager (prepares Discord content)
 - ✅ Full end-to-end: GitHub webhook → Discord message + thread
+
+#### Phase 3: Status Management
+- ✅ Handle PR converted to draft (updates message status)
+- ✅ Handle PR ready for review (updates message status)
+- ✅ Handle PR closed (updates message, posts to thread, locks thread)
+- ✅ Handle PR merged (updates message, posts to thread, locks thread)
+- ✅ Automatic thread locking on close/merge
+- ✅ Status-specific colors and emojis
 
 ## Architecture
 

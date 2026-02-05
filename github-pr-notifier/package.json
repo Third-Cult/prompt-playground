@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "GitHub webhook server that posts PR notifications to Discord with threaded discussions",
   "main": "dist/index.js",
-  "license": "MIT",
+  "license": "private",
   "private": true,
   "engines": {
     "node": ">=20.0.0"

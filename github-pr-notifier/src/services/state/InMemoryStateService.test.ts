@@ -24,6 +24,7 @@ describe('InMemoryStateService', () => {
     reviews: [],
     discordMessageId: `msg-${prNumber}`,
     discordThreadId: `thread-${prNumber}`,
+    addedThreadMembers: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   });

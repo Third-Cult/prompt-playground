@@ -5,7 +5,19 @@ import { PRCoordinator } from '../coordinators/pr/PRCoordinator';
 import {
   extractPRData,
   extractReviewers,
+  extractClosedBy,
   isPROpenedEvent,
+  isPRClosedEvent,
+  isPRMerged,
+  isPRConvertedToDraft,
+  isPRReadyForReview,
+  isPRReopenedEvent,
+  isReviewRequestedEvent,
+  isReviewRequestRemovedEvent,
+  extractRequestedReviewer,
+  extractPRNumber,
+  extractReviewData,
+  isReviewDismissed,
 } from '../utils/githubPayloadParser';
 import { logger } from '../utils/logger';
 
@@ -84,12 +96,41 @@ async function processWebhook(
 
   // Handle pull_request events
   if (event === 'pull_request') {
+    const prNumber = payload.pull_request?.number;
+
     if (isPROpenedEvent(payload)) {
       const prData = extractPRData(payload);
       const reviewers = extractReviewers(payload);
-      
       await prCoordinator.handlePROpened(prData, reviewers);
+    } else if (isPRConvertedToDraft(payload)) {
+      await prCoordinator.handlePRConvertedToDraft(prNumber);
+    } else if (isPRReadyForReview(payload)) {
+      await prCoordinator.handlePRReadyForReview(prNumber);
+    } else if (isPRClosedEvent(payload)) {
+      const closedBy = extractClosedBy(payload);
+      const isMerged = isPRMerged(payload);
+      await prCoordinator.handlePRClosed(prNumber, closedBy, isMerged);
+    } else if (isPRReopenedEvent(payload)) {
+      await prCoordinator.handlePRReopened(prNumber);
+    } else if (isReviewRequestedEvent(payload)) {
+      const reviewer = extractRequestedReviewer(payload);
+      await prCoordinator.handleReviewerAdded(prNumber, reviewer);
+    } else if (isReviewRequestRemovedEvent(payload)) {
+      const reviewer = extractRequestedReviewer(payload);
+      await prCoordinator.handleReviewerRemoved(prNumber, reviewer);
     }
-    // Future: handle other PR events (edited, closed, etc.)
+  }
+
+  // Handle pull_request_review events (review submitted, dismissed)
+  if (event === 'pull_request_review') {
+    const prNumber = extractPRNumber(payload);
+    const reviewData = extractReviewData(payload);
+
+    if (isReviewDismissed(payload)) {
+      await prCoordinator.handleReviewDismissed(prNumber, reviewData);
+    } else {
+      // Handle approved, changes_requested, commented
+      await prCoordinator.handleReviewSubmitted(prNumber, reviewData);
+    }
   }
 }

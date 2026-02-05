@@ -56,11 +56,13 @@ describe('Integration: GitHub Webhook → Discord Message Flow', () => {
       sendMessage: jest.fn().mockResolvedValue('mock-message-id-123'),
       editMessage: jest.fn().mockResolvedValue(undefined),
       addReaction: jest.fn().mockResolvedValue(undefined),
+      removeReaction: jest.fn().mockResolvedValue(undefined),
       createThread: jest.fn().mockResolvedValue('mock-thread-id-456'),
       sendThreadMessage: jest.fn().mockResolvedValue('mock-thread-msg-id-789'),
       addThreadMember: jest.fn().mockResolvedValue(undefined),
       removeThreadMember: jest.fn().mockResolvedValue(undefined),
       lockThread: jest.fn().mockResolvedValue(undefined),
+      getThreadMembers: jest.fn().mockResolvedValue([]),
       isReady: jest.fn().mockReturnValue(true),
       cleanup: jest.fn().mockResolvedValue(undefined),
     };
@@ -81,6 +83,7 @@ describe('Integration: GitHub Webhook → Discord Message Flow', () => {
       stateService,
       mockDiscordService,
       notificationManager,
+      userMappingManager,
       'test-channel-id-999'
     );
 
@@ -217,6 +220,7 @@ describe('Integration: GitHub Webhook → Discord Message Flow', () => {
         isDraft: false,
         discordMessageId: 'mock-message-id-123',
         discordThreadId: 'mock-thread-id-456',
+        addedThreadMembers: [],
         repo: 'test-repo',
         owner: 'test-owner',
       });

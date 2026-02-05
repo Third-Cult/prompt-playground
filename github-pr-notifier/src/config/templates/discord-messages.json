@@ -40,9 +40,11 @@
 
   "thread_messages": {
     "pr_created": "👋 This thread is for discussing **PR #{{prNumber}}: {{title}}**.\n\nPlease keep all PR-related conversation here or in the GitHub PR itself to maintain context.\n\n[View PR on GitHub]({{url}})",
-    "reviewer_added": "📢 {{reviewerMention}} has been added as a reviewer for this PR.",
-    "review_approved": "✅ {{reviewerMention}} approved this PR!\n\n> {{comment}}\n\n{{authorMention}} Your PR has been approved by {{reviewerMention}}.",
-    "review_changes_requested": "🔴 {{reviewerMention}} requested changes on this PR.\n\n> {{comment}}\n\n{{authorMention}} Please address the feedback from {{reviewerMention}}.",
+    "reviewer_added": "📢 {{reviewerMention}} has been added as a reviewer for this PR.\n\nPlease review when you have a chance!",
+    "reviewer_removed": "{{reviewerMention}} has been removed as a reviewer.",
+    "review_approved": "✅ {{reviewerMention}} approved this PR!{{commentSuffix}}\n\n{{authorMention}}",
+    "review_changes_requested": "🔴 {{reviewerMention}} requested changes on this PR.{{commentSuffix}}\n\n{{authorMention}} Please address the feedback.",
+    "review_dismissed": "{{reviewerMention}}'s {{reviewState}} review was dismissed.",
     "pr_merged": "🎉 This PR was merged by {{mergerMention}}!\n\n{{authorMention}} Congratulations! Your changes are now in the main branch.\n\nThe thread is now locked.",
     "pr_closed": "🚪 This PR was closed by {{closerMention}}.\n\n> {{comment}}\n\n{{authorMention}} This PR has been closed. The thread is now locked."
   },

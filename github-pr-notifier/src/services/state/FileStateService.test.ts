@@ -38,6 +38,7 @@ describe('FileStateService', () => {
     reviews: [],
     discordMessageId: `msg-${prNumber}`,
     discordThreadId: `thread-${prNumber}`,
+    addedThreadMembers: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   });

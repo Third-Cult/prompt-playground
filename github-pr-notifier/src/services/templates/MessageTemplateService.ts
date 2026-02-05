@@ -66,7 +66,18 @@ export class MessageTemplateService implements IMessageTemplateService {
    */
   private replaceVariables(obj: any, variables: Record<string, any>): any {
     if (typeof obj === 'string') {
-      // Replace {{variable}} with value
+      // Check if the entire string is a single variable (e.g., "{{color}}")
+      // This preserves the original type (number, boolean, etc.)
+      const singleVarMatch = obj.match(/^\{\{(\w+)\}\}$/);
+      if (singleVarMatch) {
+        const key = singleVarMatch[1];
+        if (key in variables) {
+          // Return the actual value (preserving its type)
+          return variables[key] != null ? variables[key] : obj;
+        }
+      }
+
+      // Replace {{variable}} with value in strings containing text
       return obj.replace(/\{\{(\w+)\}\}/g, (match, key) => {
         if (key in variables) {
           const value = variables[key];

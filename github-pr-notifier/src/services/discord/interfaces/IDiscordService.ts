@@ -40,6 +40,15 @@ export interface IDiscordService {
   addReaction(channelId: string, messageId: string, emoji: string): Promise<void>;
 
   /**
+   * Remove a reaction from a message
+   * 
+   * @param channelId - Discord channel ID
+   * @param messageId - Discord message ID
+   * @param emoji - Emoji to remove (e.g., "✅" or custom emoji ID)
+   */
+  removeReaction(channelId: string, messageId: string, emoji: string): Promise<void>;
+
+  /**
    * Create a thread from a message
    * 
    * @param channelId - Discord channel ID
@@ -75,11 +84,20 @@ export interface IDiscordService {
   removeThreadMember(threadId: string, userId: string): Promise<void>;
 
   /**
-   * Lock a thread (prevent new messages)
+   * Lock or unlock a thread
    * 
    * @param threadId - Discord thread ID
+   * @param locked - true to lock, false to unlock (default: true)
    */
-  lockThread(threadId: string): Promise<void>;
+  lockThread(threadId: string, locked?: boolean): Promise<void>;
+
+  /**
+   * Get all members in a thread
+   * 
+   * @param threadId - Discord thread ID
+   * @returns Array of user IDs in the thread
+   */
+  getThreadMembers(threadId: string): Promise<string[]>;
 
   /**
    * Check if Discord client is ready
