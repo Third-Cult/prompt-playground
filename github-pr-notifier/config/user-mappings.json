@@ -1,0 +1,17 @@
+{
+  "_description": "GitHub username to Discord user ID mappings",
+  "_instructions": [
+    "1. Enable Developer Mode in Discord: Settings → Advanced → Developer Mode",
+    "2. Right-click on a user in Discord → Copy User ID",
+    "3. Add mapping below in format: \"github-username\": \"discord-user-id\"",
+    "4. Fields starting with _ are ignored (used for documentation)"
+  ],
+  "_example_mapping": {
+    "octocat": "123456789012345678",
+    "github-user-1": "987654321098765432",
+    "another-dev": "111222333444555666"
+  },
+  "_note": "Remove this comment section and add your real mappings below",
+  
+  "your-github-username": "your-discord-user-id"
+}

@@ -1,0 +1,62 @@
+{
+  "_description": "Discord message templates for PR notifications",
+  "_version": "1.0.0",
+  
+  "pr_created": {
+    "embeds": [{
+      "title": "{{title}} #{{prNumber}}",
+      "url": "{{url}}",
+      "description": "{{description}}",
+      "color": "{{color}}",
+      "fields": [
+        {
+          "name": "Branch",
+          "value": "`{{branchName}}` → `{{baseBranch}}`",
+          "inline": false
+        },
+        {
+          "name": "Author",
+          "value": "{{authorMention}}",
+          "inline": true
+        },
+        {
+          "name": "Reviewers",
+          "value": "{{reviewersMentions}}",
+          "inline": false
+        },
+        {
+          "name": "Status",
+          "value": "{{status}}",
+          "inline": false
+        }
+      ],
+      "footer": {
+        "text": "{{repo}}"
+      },
+      "timestamp": "{{timestamp}}"
+    }],
+    "_available_variables": ["title", "prNumber", "url", "description", "color", "branchName", "baseBranch", "authorMention", "reviewersMentions", "status", "repo", "timestamp"]
+  },
+
+  "thread_messages": {
+    "pr_created": "👋 This thread is for discussing **PR #{{prNumber}}: {{title}}**.\n\nPlease keep all PR-related conversation here or in the GitHub PR itself to maintain context.\n\n[View PR on GitHub]({{url}})",
+    "reviewer_added": "📢 {{reviewerMention}} has been added as a reviewer for this PR.",
+    "review_approved": "✅ {{reviewerMention}} approved this PR!\n\n> {{comment}}\n\n{{authorMention}} Your PR has been approved by {{reviewerMention}}.",
+    "review_changes_requested": "🔴 {{reviewerMention}} requested changes on this PR.\n\n> {{comment}}\n\n{{authorMention}} Please address the feedback from {{reviewerMention}}.",
+    "pr_merged": "🎉 This PR was merged by {{mergerMention}}!\n\n{{authorMention}} Congratulations! Your changes are now in the main branch.\n\nThe thread is now locked.",
+    "pr_closed": "🚪 This PR was closed by {{closerMention}}.\n\n> {{comment}}\n\n{{authorMention}} This PR has been closed. The thread is now locked."
+  },
+
+  "status_messages": {
+    "draft": "📝 Draft",
+    "ready_for_review": "📋 Ready for Review",
+    "changes_requested": "🔴 Changes Requested by {{reviewers}}",
+    "approved": "✅ Approved by {{reviewers}}",
+    "merged": "🎉 Merged by {{merger}}",
+    "closed": "🚪 Closed by {{closer}}"
+  },
+
+  "warnings": {
+    "no_reviewers": "⚠️ **No reviewers assigned!** Please add reviewers to this PR."
+  }
+}
