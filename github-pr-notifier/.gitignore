@@ -5,13 +5,15 @@ yarn-error.log
 # Build output
 dist/
 
-# Environment
+# Environment - NEVER commit these files with real secrets!
 .env
-.env.local
-.env.production.local
+.env.*
+!.env.example
+!.env.*.example
 
-# State files
+# State files - Contains Discord/GitHub IDs
 data/pr-state.json
+data/pr-state.*.json
 
 # Logs
 logs/
