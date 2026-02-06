@@ -212,6 +212,20 @@ export class NotificationManager {
   }
 
   /**
+   * Prepare thread message when PR is reopened
+   */
+  prepareThreadReopenedMessage(prNumber: number, author: string): string {
+    const authorMention = this.userMappingManager.getDiscordMention(author);
+
+    const rendered = this.templateService.render('thread_messages', {
+      prNumber,
+      authorMention,
+    });
+
+    return rendered.pr_reopened;
+  }
+
+  /**
    * Prepare notification with review status (for updating parent message)
    */
   prepareReviewStatusNotification(

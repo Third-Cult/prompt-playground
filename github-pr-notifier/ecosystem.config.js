@@ -31,6 +31,10 @@ module.exports = {
       out_file: './logs/dev-out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
+      
+      // Disable problematic monitoring on Windows
+      ignore_watch: ['node_modules', 'logs'],
+      pmx: false,
     },
     
     // Staging Environment
@@ -59,6 +63,10 @@ module.exports = {
       out_file: './logs/staging-out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
+      
+      // Disable problematic monitoring on Windows
+      ignore_watch: ['node_modules', 'logs'],
+      pmx: false,
     },
     
     // Production Environment
@@ -92,6 +100,10 @@ module.exports = {
       listen_timeout: 10000,
       kill_timeout: 5000,
       source_map_support: true,
+      
+      // Disable problematic monitoring on Windows
+      ignore_watch: ['node_modules', 'logs'],
+      pmx: false, // Disable PM2 runtime metrics
     },
     
     // Legacy single-environment config (for backward compatibility)
@@ -122,6 +134,10 @@ module.exports = {
       listen_timeout: 10000,
       kill_timeout: 5000,
       source_map_support: true,
+      
+      // Disable problematic monitoring on Windows
+      ignore_watch: ['node_modules', 'logs'],
+      pmx: false,
     },
   ],
 

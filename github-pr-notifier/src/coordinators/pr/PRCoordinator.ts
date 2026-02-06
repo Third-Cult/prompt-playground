@@ -253,11 +253,20 @@ export class PRCoordinator {
 
         await this.discordService.sendThreadMessage(state.discordThreadId, threadMessage);
 
-        // Remove members we explicitly added (tracked in state)
-        if (state.addedThreadMembers.length > 0) {
-          logger.info(`Removing ${state.addedThreadMembers.length} tracked members from thread ${state.discordThreadId}`);
+        // Collect all Discord user IDs to remove (reviewers + author)
+        const membersToRemove = [...state.addedThreadMembers];
+        
+        // Add author to removal list if they have a Discord mapping
+        const authorDiscordId = this.userMappingManager.getDiscordUserId(state.author);
+        if (authorDiscordId && !membersToRemove.includes(authorDiscordId)) {
+          membersToRemove.push(authorDiscordId);
+        }
+
+        // Remove all members (reviewers + author)
+        if (membersToRemove.length > 0) {
+          logger.info(`Removing ${membersToRemove.length} members from thread ${state.discordThreadId}`);
           
-          for (const memberId of state.addedThreadMembers) {
+          for (const memberId of membersToRemove) {
             try {
               await this.discordService.removeThreadMember(state.discordThreadId, memberId);
               logger.debug(`Removed member ${memberId} from thread`);
@@ -269,7 +278,7 @@ export class PRCoordinator {
           // Clear tracked members after removal
           state.addedThreadMembers = [];
         } else {
-          logger.info(`No tracked members to remove from thread ${state.discordThreadId}`);
+          logger.info(`No members to remove from thread ${state.discordThreadId}`);
         }
 
         // Lock the thread
@@ -347,12 +356,36 @@ export class PRCoordinator {
         }
       }
 
-      // Unlock the thread so discussion can continue
+      // Unlock the thread and add author back with reminder message
       if (!state.discordThreadId) {
         logger.warn(`PR #${prNumber} missing Discord thread ID, skipping thread unlock`);
       } else {
+        // Unlock the thread
         await this.discordService.lockThread(state.discordThreadId, false); // Unlock
         logger.info(`Thread ${state.discordThreadId} unlocked`);
+
+        // Add author back to the thread if they have a Discord mapping
+        const authorDiscordId = this.userMappingManager.getDiscordUserId(state.author);
+        if (authorDiscordId) {
+          try {
+            await this.discordService.addThreadMember(state.discordThreadId, authorDiscordId);
+            logger.info(`Added author ${state.author} back to thread ${state.discordThreadId}`);
+            
+            // Track the author if not already tracked
+            if (!state.addedThreadMembers.includes(authorDiscordId)) {
+              state.addedThreadMembers.push(authorDiscordId);
+            }
+          } catch (err) {
+            logger.warn(`Failed to add author ${state.author} to thread: ${(err as Error).message}`);
+          }
+        }
+
+        // Send reopened message with reminder to rerequest reviewers
+        const threadMessage = this.notificationManager.prepareThreadReopenedMessage(
+          prNumber,
+          state.author
+        );
+        await this.discordService.sendThreadMessage(state.discordThreadId, threadMessage);
       }
 
       // Save updated state

@@ -46,7 +46,8 @@
     "review_changes_requested": "🔴 {{reviewerMention}} requested changes on this PR.{{commentSuffix}}\n\n{{authorMention}} Please address the feedback.",
     "review_dismissed": "{{reviewerMention}}'s {{reviewState}} review was dismissed.",
     "pr_merged": "🎉 This PR was merged by {{mergerMention}}!\n\n{{authorMention}} Congratulations! Your changes are now in the main branch.\n\nThe thread is now locked.",
-    "pr_closed": "🚪 This PR was closed by {{closerMention}}.\n\n> {{comment}}\n\n{{authorMention}} This PR has been closed. The thread is now locked."
+    "pr_closed": "🚪 This PR was closed by {{closerMention}}.\n\n> {{comment}}\n\n{{authorMention}} This PR has been closed. The thread is now locked.",
+    "pr_reopened": "🔄 This PR has been reopened!\n\n{{authorMention}} Don't forget to re-request reviewers if needed. The thread has been unlocked for discussion."
   },
 
   "status_messages": {
