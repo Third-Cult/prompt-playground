@@ -2,8 +2,23 @@
  * GitHub PR Notifier
  * 
  * Main entry point for the webhook server
- * Phase 1: Foundation - Webhook server with core services
+ * Supports multi-environment deployment (dev, staging, production)
  */
+
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment-specific .env file
+// Allows running multiple environments simultaneously (dev, staging, prod)
+const envFile = process.env.ENV_FILE || '.env';
+const envPath = path.resolve(process.cwd(), envFile);
+
+dotenv.config({ path: envPath });
+
+// Log startup environment for debugging
+console.log(`[Startup] Loaded environment from: ${envFile}`);
+console.log(`[Startup] NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`[Startup] Port: ${process.env.PORT}`);
 
 import { GitHubService } from './services/github/GitHubService';
 import { DiscordService } from './services/discord/DiscordService';
@@ -17,7 +32,6 @@ import { IStateService } from './services/state/interfaces/IStateService';
 import { createServer, startServer } from './webhooks/server';
 import { config, validateConfig, loadUserMappings } from './config/config';
 import { logger } from './utils/logger';
-import path from 'path';
 
 /**
  * Initialize and start the application

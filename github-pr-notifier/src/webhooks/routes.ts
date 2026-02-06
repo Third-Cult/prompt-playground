@@ -26,20 +26,51 @@ import { logger } from '../utils/logger';
  */
 export function createWebhookRoutes(
   _githubService: IGitHubService,
-  _stateService: IStateService,
+  stateService: IStateService,
   prCoordinator?: PRCoordinator
 ): Router {
   const router = Router();
 
   /**
-   * Health check endpoint
+   * Health check endpoint with detailed monitoring
    */
-  router.get('/health', (_req: Request, res: Response) => {
-    res.json({
-      status: 'healthy',
-      uptime: process.uptime(),
-      timestamp: new Date().toISOString(),
-    });
+  router.get('/health', async (_req: Request, res: Response) => {
+    try {
+      const memoryUsage = process.memoryUsage();
+      const config = { stateStorageType: process.env.STATE_STORAGE_TYPE || 'memory' };
+      
+      const health: any = {
+        status: 'healthy',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        node_version: process.version,
+        memory: {
+          rss_mb: Math.round(memoryUsage.rss / 1024 / 1024),
+          heap_used_mb: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+          heap_total_mb: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+        },
+        services: {
+          state_storage: config.stateStorageType,
+        },
+      };
+
+      // Get PR count from state service
+      try {
+        const allPRs = await stateService.getAllPRStates();
+        health.services.pr_count = allPRs.length;
+      } catch (err) {
+        // Non-critical, skip
+      }
+
+      res.json(health);
+    } catch (error) {
+      res.status(500).json({
+        status: 'unhealthy',
+        error: (error as Error).message,
+        timestamp: new Date().toISOString(),
+      });
+    }
   });
 
   /**

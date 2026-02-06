@@ -1,44 +1,41 @@
 # Dependencies
 node_modules/
-.yarn/
-.pnp.*
+yarn-error.log
 
 # Build output
 dist/
-build/
-*.tsbuildinfo
 
-# Environment files
+# Environment
 .env
 .env.local
-.env.*.local
+.env.production.local
+
+# State files
+data/pr-state.json
 
 # Logs
 logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+pm2-*.log
 
-# Testing
-coverage/
-.nyc_output/
+# PM2
+.pm2/
+pids/
+ecosystem.config.json
+
+# OS
+.DS_Store
+Thumbs.db
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
-# OS
-.DS_Store
-Thumbs.db
+# Test coverage
+coverage/
 
-# State files (development)
-data/*.json
-!data/.gitkeep
-
-# PM2
-.pm2/
-pids/
+# Temporary files
+tmp/
+temp/

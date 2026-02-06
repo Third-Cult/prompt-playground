@@ -218,6 +218,26 @@ export class PRCoordinator {
           state.discordMessageId,
           messageContent
         );
+
+        // Clear all review reactions and add merged/closed reaction
+        // Remove approval and changes requested reactions
+        try {
+          await this.discordService.removeReaction(this.discordChannelId, state.discordMessageId, '✅');
+        } catch (err) {
+          logger.debug(`No ✅ reaction to remove: ${(err as Error).message}`);
+        }
+        try {
+          await this.discordService.removeReaction(this.discordChannelId, state.discordMessageId, '🔴');
+        } catch (err) {
+          logger.debug(`No 🔴 reaction to remove: ${(err as Error).message}`);
+        }
+
+        // Add merged or closed reaction
+        if (isMerged) {
+          await this.discordService.addReaction(this.discordChannelId, state.discordMessageId, '🎉');
+        } else {
+          await this.discordService.addReaction(this.discordChannelId, state.discordMessageId, '🚪');
+        }
       }
 
       // Post final message to thread, remove tracked members, and lock it
@@ -279,14 +299,23 @@ export class PRCoordinator {
         return;
       }
 
-      // Update state - reopen sets it back to ready for review (unless it's a draft)
+      // Reset status to allow recalculation (don't keep "closed"/"merged")
       state.status = state.isDraft ? 'draft' : 'ready_for_review';
+      
+      // Recalculate status based on existing reviews (since PR is being reopened)
+      const newStatus = this.calculatePRStatus(state);
+      state.status = newStatus;
       state.updatedAt = new Date();
 
+      // Get reviewers who approved/requested changes for status display
+      const statusReviewers = this.getStatusReviewers(state);
+
       // Update Discord message
-      const messageContent = this.notificationManager.preparePRCreatedNotification(
+      const messageContent = this.notificationManager.prepareReviewStatusNotification(
         state,
-        state.reviewers
+        state.reviewers,
+        newStatus,
+        statusReviewers
       );
 
       if (!state.discordMessageId) {
@@ -297,6 +326,25 @@ export class PRCoordinator {
           state.discordMessageId,
           messageContent
         );
+
+        // Remove merged/closed reactions if present
+        try {
+          await this.discordService.removeReaction(this.discordChannelId, state.discordMessageId, '🎉');
+        } catch (err) {
+          logger.debug(`No 🎉 reaction to remove: ${(err as Error).message}`);
+        }
+        try {
+          await this.discordService.removeReaction(this.discordChannelId, state.discordMessageId, '🚪');
+        } catch (err) {
+          logger.debug(`No 🚪 reaction to remove: ${(err as Error).message}`);
+        }
+
+        // Restore appropriate reaction based on recalculated status
+        if (newStatus === 'approved') {
+          await this.discordService.addReaction(this.discordChannelId, state.discordMessageId, '✅');
+        } else if (newStatus === 'changes_requested') {
+          await this.discordService.addReaction(this.discordChannelId, state.discordMessageId, '🔴');
+        }
       }
 
       // Unlock the thread so discussion can continue
@@ -522,11 +570,27 @@ export class PRCoordinator {
           messageContent
         );
 
-        // Add reaction based on review state
-        if (reviewData.state === 'approved') {
-          await this.discordService.addReaction(this.discordChannelId, state.discordMessageId, '✅');
-        } else if (reviewData.state === 'changes_requested') {
+        // Manage reactions based on overall PR status (not individual review)
+        // If changes requested: only show 🔴, remove ✅
+        // If approved (no changes): only show ✅, remove 🔴
+        if (newStatus === 'changes_requested') {
+          // Remove checkmark if present
+          try {
+            await this.discordService.removeReaction(this.discordChannelId, state.discordMessageId, '✅');
+          } catch (err) {
+            logger.debug(`No ✅ reaction to remove: ${(err as Error).message}`);
+          }
+          // Add red circle
           await this.discordService.addReaction(this.discordChannelId, state.discordMessageId, '🔴');
+        } else if (newStatus === 'approved') {
+          // Remove red circle if present
+          try {
+            await this.discordService.removeReaction(this.discordChannelId, state.discordMessageId, '🔴');
+          } catch (err) {
+            logger.debug(`No 🔴 reaction to remove: ${(err as Error).message}`);
+          }
+          // Add checkmark
+          await this.discordService.addReaction(this.discordChannelId, state.discordMessageId, '✅');
         }
       }
 

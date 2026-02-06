@@ -6,7 +6,11 @@ A webhook server that automatically posts GitHub Pull Request notifications to D
 
 **Phase 1: Foundation** ✅ Complete  
 **Phase 2: PR Creation** ✅ Complete  
-**Phase 3: Status Management** ✅ Complete
+**Phase 3: Status Management** ✅ Complete  
+**Phase 4: Reviewer Management** ✅ Complete  
+**Phase 5: E2E Testing** ✅ Complete  
+**Phase 6: Production Deployment** ✅ Complete  
+**Phase 7: Multi-Environment Setup** ✅ Complete
 
 ### Features Implemented
 
@@ -34,8 +38,44 @@ A webhook server that automatically posts GitHub Pull Request notifications to D
 - ✅ Handle PR ready for review (updates message status)
 - ✅ Handle PR closed (updates message, posts to thread, locks thread)
 - ✅ Handle PR merged (updates message, posts to thread, locks thread)
+- ✅ Handle PR reopened (unlocks thread, recalculates status)
 - ✅ Automatic thread locking on close/merge
 - ✅ Status-specific colors and emojis
+
+#### Phase 4: Reviewer Management
+- ✅ Handle reviewer add/remove events
+- ✅ Add/remove reviewers from Discord thread
+- ✅ Track thread members for cleanup
+- ✅ Update parent message when reviewers change
+- ✅ Handle review submissions (approved, changes requested)
+- ✅ Handle review dismissals
+- ✅ Emoji reactions for review states (✅ approved, 🔴 changes requested)
+- ✅ Status priority: changes_requested > approved
+
+#### Phase 5: E2E Testing
+- ✅ Comprehensive automated test suite (6 scenarios, 110 tests total)
+- ✅ Tests complete PR lifecycle without external dependencies
+- ✅ Black-box testing of all webhook → Discord flows
+- ✅ Zero-downtime testing (runs in 4 seconds)
+
+#### Phase 6: Production Deployment
+- ✅ PM2 process management configuration
+- ✅ Enhanced health check endpoint with monitoring
+- ✅ Tunnel setup guides (CloudFlare/ngrok)
+- ✅ Comprehensive production documentation
+- ✅ Deployment scripts and automation
+- ✅ Monitoring and alerting guides
+- ✅ Troubleshooting documentation
+
+#### Phase 7: Multi-Environment Setup
+- ✅ Dev/Staging/Production environment configuration
+- ✅ Simultaneous multi-environment support (ports 3000/3001/3002)
+- ✅ Environment-specific .env files
+- ✅ PM2 multi-app configuration
+- ✅ Git branching strategy (dev → staging → main)
+- ✅ Environment-specific scripts (start:dev, deploy:staging, etc.)
+- ✅ Complete deployment workflow documentation
+- ✅ Per-environment testing strategies
 
 ## Architecture
 
@@ -139,7 +179,36 @@ yarn format
 yarn typecheck
 ```
 
-## Production
+## Production Deployment
+
+### Single Environment Setup
+
+See **[QUICKSTART.md](./QUICKSTART.md)** for a step-by-step guide to deploy production.
+
+### Multi-Environment Setup (Dev/Staging/Prod)
+
+See **[MULTI_ENV_QUICKSTART.md](./MULTI_ENV_QUICKSTART.md)** to run development, staging, and production simultaneously.
+
+### With PM2 (Recommended)
+
+```bash
+# Build
+yarn build
+
+# Start with PM2
+yarn start:pm2
+
+# View status
+pm2 status
+
+# View logs
+pm2 logs github-pr-notifier
+
+# Monitoring dashboard
+pm2 monit
+```
+
+### Manual Start
 
 ```bash
 # Build
@@ -148,6 +217,12 @@ yarn build
 # Start server
 yarn start
 ```
+
+### Documentation
+
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide (single & multi-environment)
+- **[E2E_TESTING.md](./E2E_TESTING.md)** - Automated testing guide (110 tests)
+- **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Pre-deployment checklist
 
 ## Testing
 
@@ -166,7 +241,7 @@ yarn test:coverage
 
 ### Test Coverage
 
-**104 tests, 100% passing** (1 skipped)
+**110 tests, 100% passing**
 
 #### Unit Tests (98 tests)
 - **GitHubService**: Webhook signature verification, payload parsing (9 tests)
@@ -186,9 +261,20 @@ yarn test:coverage
   - Non-PR events
   - State persistence
 
-The integration tests use **mocked Discord service** to verify the entire webhook-to-notification flow without requiring a live Discord bot.
+#### E2E Tests (6 comprehensive scenarios)
+- **Complete PR Lifecycle Testing**: Automated scenarios testing all functionality
+  - Simple PR lifecycle (Open → Approve → Merge)
+  - Changes requested flow
+  - Reviewer management
+  - Complex status transitions (Draft → Ready → Close → Reopen)
+  - Multiple reviewers with conflicts
+  - Review dismissal
+
+The integration and E2E tests use **mocked Discord service** to verify the entire webhook-to-notification flow without requiring a live Discord bot.
 
 All tests follow **black-box contract testing** principles - they test public APIs without accessing internal implementation.
+
+See **[E2E_TESTING.md](./E2E_TESTING.md)** for detailed testing documentation.
 
 ## API Endpoints
 
@@ -201,7 +287,18 @@ Response:
 {
   "status": "healthy",
   "uptime": 123.45,
-  "timestamp": "2026-02-04T12:00:00.000Z"
+  "timestamp": "2026-02-05T12:00:00.000Z",
+  "version": "1.0.0",
+  "node_version": "v20.11.0",
+  "memory": {
+    "rss_mb": 120,
+    "heap_used_mb": 45,
+    "heap_total_mb": 80
+  },
+  "services": {
+    "state_storage": "file",
+    "pr_count": 5
+  }
 }
 ```
 
@@ -322,25 +419,38 @@ Add them to `.env` and the bot will post to Discord on PR events.
 
 ---
 
-## Next Steps: Future Phases
+## Production Deployment Status
 
-### Phase 3: Status Management
-- [ ] Handle PR status changes (draft toggle, ready for review)
-- [ ] Handle PR closed/merged events
-- [ ] Thread locking and member cleanup
+✅ **Ready for Production**
 
-### Phase 4: Reviewer Management
-- [ ] Handle reviewer add/remove events
-- [ ] Thread member management
-- [ ] Update messages when reviewers change
+All core functionality implemented and tested:
+- Full PR lifecycle support
+- Reviewer management
+- Review activity tracking
+- Automated E2E testing
+- Production deployment guides
+- Monitoring and health checks
 
-### Phase 5: Review Activity
-- [ ] Handle review submissions (approved, changes requested)
-- [ ] Post review comments to thread
-- [ ] Add reactions to parent message
-- [ ] Track review state
+### Getting Started
 
-See [DISCORD_PR_BOT_ARCHITECTURE.md](../DISCORD_PR_BOT_ARCHITECTURE.md) for the full implementation plan.
+1. **Quick deployment**: Follow [QUICKSTART.md](./QUICKSTART.md) (15 minutes)
+2. **Full setup**: Read [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)
+3. **Testing**: Review [E2E_TESTING.md](./E2E_TESTING.md)
+
+---
+
+## Future Enhancement Ideas
+
+Potential future features (not currently planned):
+
+- **Ticketing Integration**: Link PRs to GitHub Issues with validation
+- **Enhanced Customization**: More template variables, per-repo configs
+- **Multi-Channel Broadcasting**: Abstract notification channels for email, etc.
+- **Team Reviewers**: Support for GitHub team reviewer requests
+- **PR Labels**: Display labels in Discord messages
+- **Metrics & Analytics**: Dashboard for PR statistics
+
+See [DISCORD_PR_BOT_ARCHITECTURE.md](../DISCORD_PR_BOT_ARCHITECTURE.md) for architectural details.
 
 ## Contributing
 
