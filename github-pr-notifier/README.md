@@ -77,6 +77,17 @@ A webhook server that automatically posts GitHub Pull Request notifications to D
 - ✅ Complete deployment workflow documentation
 - ✅ Per-environment testing strategies
 
+#### Phase 8 & 9: Authentication & PR Recovery
+- ✅ Automatic PR recovery from GitHub API when state is missing
+- ✅ Handles bot downtime, state loss, and webhook failures
+- ✅ Personal Access Token (PAT) support for simple authentication
+- ✅ GitHub App authentication support (recommended for production)
+- ✅ Organization-owned authentication (not tied to individual users)
+- ✅ Installation-based access control (only repos where app is installed)
+- ✅ Auto-refreshing tokens with better security
+- ✅ Comprehensive tests for recovery and auth scenarios
+- ✅ See [AUTHENTICATION.md](./AUTHENTICATION.md) for complete setup guide
+
 ## Architecture
 
 Following clean architecture patterns:
@@ -119,6 +130,18 @@ NODE_ENV=development
 
 # GitHub Configuration
 GITHUB_WEBHOOK_SECRET=your-webhook-secret-here
+
+# GitHub Authentication (Optional - enables PR recovery)
+# Choose ONE: Personal Access Token OR GitHub App
+# See AUTHENTICATION.md for detailed setup guide
+
+# Option A: Personal Access Token (simple - good for dev/personal projects)
+GITHUB_TOKEN=your-github-personal-access-token-here
+
+# Option B: GitHub App (recommended for production)
+# GITHUB_APP_ID=123456
+# GITHUB_APP_INSTALLATION_ID=12345678
+# GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
 
 # Discord Configuration
 DISCORD_BOT_TOKEN=your-discord-bot-token-here
@@ -221,8 +244,9 @@ yarn start
 ### Documentation
 
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide (single & multi-environment)
-- **[E2E_TESTING.md](./E2E_TESTING.md)** - Automated testing guide (110 tests)
+- **[AUTHENTICATION.md](./AUTHENTICATION.md)** - GitHub authentication setup (PAT & GitHub App)
 - **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Pre-deployment checklist
+- **[E2E_TESTING.md](./E2E_TESTING.md)** - Automated testing guide (122 tests)
 
 ## Testing
 
@@ -241,10 +265,10 @@ yarn test:coverage
 
 ### Test Coverage
 
-**110 tests, 100% passing**
+**122 tests, 100% passing**
 
-#### Unit Tests (98 tests)
-- **GitHubService**: Webhook signature verification, payload parsing (9 tests)
+#### Unit Tests (110 tests)
+- **GitHubService**: Webhook signature verification, payload parsing, API integration (21 tests)
 - **MessageTemplateService**: Template loading, variable substitution (17 tests)
 - **InMemoryStateService**: CRUD operations, reverse lookups (18 tests)
 - **FileStateService**: Persistence, initialization, cleanup (14 tests)
@@ -379,7 +403,7 @@ You can fully test the bot without real GitHub webhooks or Discord:
 yarn test
 ```
 
-This runs **98 comprehensive tests** that verify all logic with mocked services.
+This runs **122 comprehensive tests** that verify all logic with mocked services.
 
 ### 2. Start Server in Webhook-Only Mode
 
@@ -427,15 +451,18 @@ All core functionality implemented and tested:
 - Full PR lifecycle support
 - Reviewer management
 - Review activity tracking
-- Automated E2E testing
+- PR recovery from GitHub API
+- GitHub App & PAT authentication
+- Automated E2E testing (122 tests)
 - Production deployment guides
 - Monitoring and health checks
 
 ### Getting Started
 
-1. **Quick deployment**: Follow [QUICKSTART.md](./QUICKSTART.md) (15 minutes)
-2. **Full setup**: Read [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)
-3. **Testing**: Review [E2E_TESTING.md](./E2E_TESTING.md)
+1. **Quick setup**: Follow deployment steps in [DEPLOYMENT.md](./DEPLOYMENT.md)
+2. **Authentication**: Setup GitHub access in [AUTHENTICATION.md](./AUTHENTICATION.md)
+3. **Pre-deployment**: Review [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)
+4. **Testing**: See [E2E_TESTING.md](./E2E_TESTING.md)
 
 ---
 

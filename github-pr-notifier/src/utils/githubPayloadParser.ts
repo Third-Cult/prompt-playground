@@ -177,3 +177,17 @@ export function extractReviewData(payload: any): {
 export function extractPRNumber(payload: any): number {
   return payload.pull_request?.number || 0;
 }
+
+/**
+ * Extract repository owner from any webhook payload
+ */
+export function extractRepoOwner(payload: any): string {
+  return payload.repository?.owner?.login || 'unknown';
+}
+
+/**
+ * Extract repository name from any webhook payload
+ */
+export function extractRepoName(payload: any): string {
+  return payload.repository?.name || 'unknown';
+}

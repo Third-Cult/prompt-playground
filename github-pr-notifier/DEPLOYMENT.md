@@ -2,6 +2,11 @@
 
 Complete guide for deploying GitHub PR Notifier in single or multi-environment configurations.
 
+**📖 See also:**
+- **[AUTHENTICATION.md](./AUTHENTICATION.md)** - GitHub authentication setup (PAT & GitHub App)
+- **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Pre-deployment checklist
+- **[E2E_TESTING.md](./E2E_TESTING.md)** - Testing guide
+
 ---
 
 ## Table of Contents
@@ -41,14 +46,28 @@ Copy and edit `.env.production`:
 ```env
 PORT=3002
 NODE_ENV=production
+
+# GitHub Configuration
 GITHUB_WEBHOOK_SECRET=your-strong-secret-here
+
+# GitHub Authentication (optional - enables PR recovery)
+# See AUTHENTICATION.md for setup
+GITHUB_APP_ID=your-app-id  # Recommended for production
+GITHUB_APP_INSTALLATION_ID=your-installation-id
+GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+
+# Discord Configuration
 DISCORD_BOT_TOKEN=your-bot-token
 DISCORD_CHANNEL_ID=your-channel-id
+
+# Storage & Logging
 STATE_STORAGE_TYPE=file
 STATE_FILE_PATH=./data/pr-state.production.json
 USER_MAPPINGS_PATH=./config/user-mappings.json
 LOG_LEVEL=info
 ```
+
+**Note:** GitHub authentication is optional but recommended. See **[AUTHENTICATION.md](./AUTHENTICATION.md)** for PAT vs GitHub App setup.
 
 Edit `config/user-mappings.json` with GitHub → Discord user ID mappings.
 

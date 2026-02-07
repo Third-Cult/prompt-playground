@@ -45,7 +45,15 @@ async function main() {
     logger.info('Configuration validated');
 
     // Initialize services
-    const githubService = new GitHubService();
+    const githubAppConfig = config.github.app.id && config.github.app.privateKey 
+      ? {
+          appId: config.github.app.id,
+          privateKey: config.github.app.privateKey,
+          installationId: config.github.app.installationId,
+        }
+      : undefined;
+    
+    const githubService = new GitHubService(config.github.token, githubAppConfig);
     logger.info('GitHubService initialized');
 
     // Initialize state service based on config
@@ -95,7 +103,8 @@ async function main() {
         discordService,
         notificationManager,
         userMappingManager,
-        config.discord.channelId
+        config.discord.channelId,
+        githubService
       );
       logger.info('PRCoordinator initialized');
     } else {

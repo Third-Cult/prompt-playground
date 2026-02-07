@@ -18,6 +18,8 @@ import {
   extractPRNumber,
   extractReviewData,
   isReviewDismissed,
+  extractRepoOwner,
+  extractRepoName,
 } from '../utils/githubPayloadParser';
 import { logger } from '../utils/logger';
 
@@ -128,27 +130,29 @@ async function processWebhook(
   // Handle pull_request events
   if (event === 'pull_request') {
     const prNumber = payload.pull_request?.number;
+    const owner = extractRepoOwner(payload);
+    const repo = extractRepoName(payload);
 
     if (isPROpenedEvent(payload)) {
       const prData = extractPRData(payload);
       const reviewers = extractReviewers(payload);
       await prCoordinator.handlePROpened(prData, reviewers);
     } else if (isPRConvertedToDraft(payload)) {
-      await prCoordinator.handlePRConvertedToDraft(prNumber);
+      await prCoordinator.handlePRConvertedToDraft(prNumber, owner, repo);
     } else if (isPRReadyForReview(payload)) {
-      await prCoordinator.handlePRReadyForReview(prNumber);
+      await prCoordinator.handlePRReadyForReview(prNumber, owner, repo);
     } else if (isPRClosedEvent(payload)) {
       const closedBy = extractClosedBy(payload);
       const isMerged = isPRMerged(payload);
-      await prCoordinator.handlePRClosed(prNumber, closedBy, isMerged);
+      await prCoordinator.handlePRClosed(prNumber, closedBy, isMerged, owner, repo);
     } else if (isPRReopenedEvent(payload)) {
-      await prCoordinator.handlePRReopened(prNumber);
+      await prCoordinator.handlePRReopened(prNumber, owner, repo);
     } else if (isReviewRequestedEvent(payload)) {
       const reviewer = extractRequestedReviewer(payload);
-      await prCoordinator.handleReviewerAdded(prNumber, reviewer);
+      await prCoordinator.handleReviewerAdded(prNumber, reviewer, owner, repo);
     } else if (isReviewRequestRemovedEvent(payload)) {
       const reviewer = extractRequestedReviewer(payload);
-      await prCoordinator.handleReviewerRemoved(prNumber, reviewer);
+      await prCoordinator.handleReviewerRemoved(prNumber, reviewer, owner, repo);
     }
   }
 
@@ -156,12 +160,14 @@ async function processWebhook(
   if (event === 'pull_request_review') {
     const prNumber = extractPRNumber(payload);
     const reviewData = extractReviewData(payload);
+    const owner = extractRepoOwner(payload);
+    const repo = extractRepoName(payload);
 
     if (isReviewDismissed(payload)) {
-      await prCoordinator.handleReviewDismissed(prNumber, reviewData);
+      await prCoordinator.handleReviewDismissed(prNumber, reviewData, owner, repo);
     } else {
       // Handle approved, changes_requested, commented
-      await prCoordinator.handleReviewSubmitted(prNumber, reviewData);
+      await prCoordinator.handleReviewSubmitted(prNumber, reviewData, owner, repo);
     }
   }
 }

@@ -19,6 +19,12 @@ Use this checklist to ensure a smooth production deployment.
 ### Configuration
 - [ ] `.env` file created from `.env.production` template
 - [ ] `GITHUB_WEBHOOK_SECRET` configured (strong 32+ character secret)
+- [ ] **GitHub Authentication** configured - enables PR recovery (optional but recommended)
+  - [ ] Choose ONE method: Personal Access Token OR GitHub App
+  - [ ] See **[AUTHENTICATION.md](./AUTHENTICATION.md)** for complete setup guide
+  - [ ] Option A: `GITHUB_TOKEN` (PAT - simple, good for dev/personal)
+  - [ ] Option B: GitHub App (RECOMMENDED for production/organizations)
+    - [ ] `GITHUB_APP_ID`, `GITHUB_APP_INSTALLATION_ID`, `GITHUB_APP_PRIVATE_KEY`
 - [ ] `DISCORD_BOT_TOKEN` configured (from Discord Developer Portal)
 - [ ] `DISCORD_CHANNEL_ID` configured (enable Developer Mode in Discord)
 - [ ] `STATE_STORAGE_TYPE` set (`file` recommended for production)

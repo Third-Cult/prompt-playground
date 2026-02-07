@@ -1,9 +1,12 @@
+import { PRData } from '../../../models/PRState';
+
 /**
  * GitHub Service Interface
  * 
  * Responsibilities:
  * - Verify GitHub webhook signatures
  * - Parse GitHub webhook payloads
+ * - Fetch PR data from GitHub REST API
  */
 export interface IGitHubService {
   /**
@@ -23,4 +26,15 @@ export interface IGitHubService {
    * @returns Parsed payload object
    */
   parseWebhookPayload<T>(payload: string): T;
+
+  /**
+   * Fetch PR data from GitHub REST API
+   * Used for recovery when PR state is missing
+   * 
+   * @param owner - Repository owner
+   * @param repo - Repository name
+   * @param prNumber - PR number
+   * @returns PR data with reviewers
+   */
+  fetchPR(owner: string, repo: string, prNumber: number): Promise<PRData & { reviewers: string[] }>;
 }

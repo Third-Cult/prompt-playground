@@ -11,4 +11,8 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   verbose: true,
+  moduleNameMapper: {
+    '^@octokit/rest$': '<rootDir>/src/__mocks__/@octokit/rest.ts',
+    '^@octokit/app$': '<rootDir>/src/__mocks__/@octokit/app.ts',
+  },
 };

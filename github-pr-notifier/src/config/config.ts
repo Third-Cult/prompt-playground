@@ -22,6 +22,14 @@ export const config = {
    */
   github: {
     webhookSecret: process.env.GITHUB_WEBHOOK_SECRET || '',
+    // Personal Access Token (simple auth)
+    token: process.env.GITHUB_TOKEN || '',
+    // GitHub App credentials (recommended for production)
+    app: {
+      id: process.env.GITHUB_APP_ID || '',
+      privateKey: process.env.GITHUB_APP_PRIVATE_KEY || '',
+      installationId: process.env.GITHUB_APP_INSTALLATION_ID || '',
+    },
   },
 
   /**

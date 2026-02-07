@@ -1,5 +1,6 @@
 import { IStateService } from '../../services/state/interfaces/IStateService';
 import { IDiscordService } from '../../services/discord/interfaces/IDiscordService';
+import { IGitHubService } from '../../services/github/interfaces/IGitHubService';
 import { NotificationManager } from './managers/NotificationManager';
 import { UserMappingManager } from './managers/UserMappingManager';
 import { PRData, PRStateData, PRStatus } from '../../models/PRState';
@@ -13,6 +14,7 @@ import { logger } from '../../utils/logger';
  * - Delegate to managers for specific concerns
  * - Coordinate Discord service calls
  * - Maintain PR state
+ * - Recover missing PR state from GitHub API
  * 
  * Pattern: Feature coordinator
  */
@@ -22,7 +24,8 @@ export class PRCoordinator {
     private discordService: IDiscordService,
     private notificationManager: NotificationManager,
     private userMappingManager: UserMappingManager,
-    private discordChannelId: string
+    private discordChannelId: string,
+    private githubService?: IGitHubService
   ) {}
 
   /**
@@ -99,13 +102,13 @@ export class PRCoordinator {
   /**
    * Handle PR converted to draft
    */
-  async handlePRConvertedToDraft(prNumber: number): Promise<void> {
+  async handlePRConvertedToDraft(prNumber: number, owner: string, repo: string): Promise<void> {
     try {
       logger.info(`Handling PR converted to draft: #${prNumber}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      const state = await this.getPRStateOrRecover(prNumber, owner, repo);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
+        logger.error(`PR #${prNumber} not found in state and recovery failed, skipping`);
         return;
       }
 
@@ -143,13 +146,13 @@ export class PRCoordinator {
   /**
    * Handle PR marked ready for review
    */
-  async handlePRReadyForReview(prNumber: number): Promise<void> {
+  async handlePRReadyForReview(prNumber: number, owner: string, repo: string): Promise<void> {
     try {
       logger.info(`Handling PR ready for review: #${prNumber}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      const state = await this.getPRStateOrRecover(prNumber, owner, repo);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
+        logger.error(`PR #${prNumber} not found in state and recovery failed, skipping`);
         return;
       }
 
@@ -187,14 +190,14 @@ export class PRCoordinator {
   /**
    * Handle PR closed
    */
-  async handlePRClosed(prNumber: number, closedBy: string, isMerged: boolean): Promise<void> {
+  async handlePRClosed(prNumber: number, closedBy: string, isMerged: boolean, owner: string, repo: string): Promise<void> {
     try {
       const action = isMerged ? 'merged' : 'closed';
       logger.info(`Handling PR ${action}: #${prNumber} by ${closedBy}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      const state = await this.getPRStateOrRecover(prNumber, owner, repo);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
+        logger.error(`PR #${prNumber} not found in state and recovery failed, skipping`);
         return;
       }
 
@@ -298,13 +301,13 @@ export class PRCoordinator {
   /**
    * Handle PR reopened
    */
-  async handlePRReopened(prNumber: number): Promise<void> {
+  async handlePRReopened(prNumber: number, owner: string, repo: string): Promise<void> {
     try {
       logger.info(`Handling PR reopened: #${prNumber}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      const state = await this.getPRStateOrRecover(prNumber, owner, repo);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
+        logger.error(`PR #${prNumber} not found in state and recovery failed, skipping`);
         return;
       }
 
@@ -401,13 +404,13 @@ export class PRCoordinator {
   /**
    * Handle reviewer added to PR
    */
-  async handleReviewerAdded(prNumber: number, reviewer: string): Promise<void> {
+  async handleReviewerAdded(prNumber: number, reviewer: string, owner: string, repo: string): Promise<void> {
     try {
       logger.info(`Handling reviewer added: #${prNumber}, reviewer: ${reviewer}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      const state = await this.getPRStateOrRecover(prNumber, owner, repo);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
+        logger.error(`PR #${prNumber} not found in state and recovery failed, skipping`);
         return;
       }
 
@@ -473,13 +476,13 @@ export class PRCoordinator {
   /**
    * Handle reviewer removed from PR
    */
-  async handleReviewerRemoved(prNumber: number, reviewer: string): Promise<void> {
+  async handleReviewerRemoved(prNumber: number, reviewer: string, owner: string, repo: string): Promise<void> {
     try {
       logger.info(`Handling reviewer removed: #${prNumber}, reviewer: ${reviewer}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      const state = await this.getPRStateOrRecover(prNumber, owner, repo);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
+        logger.error(`PR #${prNumber} not found in state and recovery failed, skipping`);
         return;
       }
 
@@ -554,14 +557,16 @@ export class PRCoordinator {
       state: 'approved' | 'changes_requested' | 'commented' | 'dismissed';
       comment: string;
       submittedAt: Date;
-    }
+    },
+    owner: string,
+    repo: string
   ): Promise<void> {
     try {
       logger.info(`Handling review submitted: #${prNumber}, reviewer: ${reviewData.reviewer}, state: ${reviewData.state}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      const state = await this.getPRStateOrRecover(prNumber, owner, repo);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
+        logger.error(`PR #${prNumber} not found in state and recovery failed, skipping`);
         return;
       }
 
@@ -676,14 +681,16 @@ export class PRCoordinator {
       state: 'approved' | 'changes_requested' | 'commented' | 'dismissed';
       comment: string;
       submittedAt: Date;
-    }
+    },
+    owner: string,
+    repo: string
   ): Promise<void> {
     try {
       logger.info(`Handling review dismissed: #${prNumber}, reviewer: ${reviewData.reviewer}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      const state = await this.getPRStateOrRecover(prNumber, owner, repo);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
+        logger.error(`PR #${prNumber} not found in state and recovery failed, skipping`);
         return;
       }
 
@@ -755,6 +762,61 @@ export class PRCoordinator {
       logger.error(`Failed to handle review dismissed: ${(error as Error).message}`);
       throw error;
     }
+  }
+
+  /**
+   * Handle missing PR by fetching from GitHub API
+   * Creates Discord message/thread as if PR was just opened
+   */
+  private async handleMissingPR(owner: string, repo: string, prNumber: number): Promise<PRStateData | null> {
+    if (!this.githubService) {
+      logger.warn(`Cannot recover PR #${prNumber}: GitHubService not available`);
+      return null;
+    }
+
+    try {
+      logger.warn(`PR #${prNumber} not in state, attempting recovery from GitHub API...`);
+
+      // Fetch PR data from GitHub
+      const prDataWithReviewers = await this.githubService.fetchPR(owner, repo, prNumber);
+      
+      // Extract PR data and reviewers
+      const { reviewers, ...prData } = prDataWithReviewers;
+
+      // Create Discord message/thread as if PR was just opened
+      await this.handlePROpened(prData, reviewers);
+
+      // Return the newly created state
+      const state = await this.stateService.getPRState(prNumber);
+      
+      if (state) {
+        logger.info(`Successfully recovered PR #${prNumber} from GitHub API`);
+      }
+      
+      return state;
+    } catch (error) {
+      logger.error(`Failed to recover PR #${prNumber} from GitHub API: ${(error as Error).message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Get PR state or attempt recovery from GitHub API
+   * Returns null only if state doesn't exist and recovery fails
+   */
+  private async getPRStateOrRecover(prNumber: number, owner: string, repo: string): Promise<PRStateData | null> {
+    // Try to get existing state
+    let state = await this.stateService.getPRState(prNumber);
+    
+    if (state) {
+      return state;
+    }
+
+    // State not found - attempt recovery
+    logger.info(`PR #${prNumber} not found in state, attempting recovery...`);
+    state = await this.handleMissingPR(owner, repo, prNumber);
+    
+    return state;
   }
 
   /**
