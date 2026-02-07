@@ -60,7 +60,9 @@ export class PRCoordinator {
       const threadMessage = this.notificationManager.prepareThreadCreatedMessage(
         prData.number,
         prData.title,
-        prData.url
+        prData.url,
+        prData.author,
+        reviewers
       );
 
       await this.discordService.sendThreadMessage(threadId, threadMessage);
@@ -442,20 +444,25 @@ export class PRCoordinator {
         const discordUserId = this.userMappingManager.getDiscordUserId(reviewer);
         
         if (discordUserId) {
-          // Add to thread
-          await this.discordService.addThreadMember(state.discordThreadId, discordUserId);
-          
-          // Track the member
-          if (!state.addedThreadMembers.includes(discordUserId)) {
-            state.addedThreadMembers.push(discordUserId);
+          // Try to add to thread (may fail if bot lacks permissions)
+          try {
+            await this.discordService.addThreadMember(state.discordThreadId, discordUserId);
+            
+            // Track the member
+            if (!state.addedThreadMembers.includes(discordUserId)) {
+              state.addedThreadMembers.push(discordUserId);
+            }
+            
+            logger.info(`Added ${reviewer} (${discordUserId}) to thread and tracked`);
+          } catch (error) {
+            // Log but don't fail - the @mention in the message will notify them anyway
+            logger.warn(`Could not add ${reviewer} to thread: ${(error as Error).message}`);
           }
-          
-          logger.info(`Added ${reviewer} (${discordUserId}) to thread and tracked`);
         } else {
           logger.warn(`No Discord mapping found for reviewer ${reviewer}, skipping thread add`);
         }
 
-        // Send notification in thread
+        // Send notification in thread (always send this even if adding member failed)
         const threadMessage = this.notificationManager.prepareThreadReviewerAddedMessage(reviewer);
         await this.discordService.sendThreadMessage(state.discordThreadId, threadMessage);
       }
@@ -483,12 +490,18 @@ export class PRCoordinator {
         return;
       }
 
-      // Remove reviewer from state
+      // Check if this reviewer has already submitted a review
+      const hasReviewed = state.reviews.some((r) => r.reviewer === reviewer);
+      
+      if (hasReviewed) {
+        // Don't remove reviewer if they've already reviewed - keep them for historical record
+        logger.info(`Reviewer ${reviewer} has already submitted a review, keeping in reviewer list`);
+        return;
+      }
+
+      // Remove reviewer from state (only if they haven't reviewed yet)
       state.reviewers = state.reviewers.filter((r) => r !== reviewer);
       state.updatedAt = new Date();
-
-      // Remove any reviews from this reviewer
-      state.reviews = state.reviews.filter((r) => r.reviewer !== reviewer);
 
       // Update Discord message
       const messageContent = this.notificationManager.prepareReviewStatusNotification(

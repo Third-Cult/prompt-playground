@@ -56,11 +56,17 @@ export class NotificationManager {
   /**
    * Prepare thread created message
    */
-  prepareThreadCreatedMessage(prNumber: number, title: string, url: string): string {
+  prepareThreadCreatedMessage(prNumber: number, title: string, url: string, author: string, reviewers: string[]): string {
+    const authorMention = this.userMappingManager.getDiscordMention(author);
+    const hasReviewers = reviewers.length > 0;
+    const reviewerReminder = hasReviewers ? '' : '\n\n⚠️ **Don\'t forget to add reviewers to this PR!**';
+    
     const rendered = this.templateService.render('thread_messages', {
       prNumber,
       title,
       url,
+      authorMention,
+      reviewerReminder,
     });
 
     return rendered.pr_created;

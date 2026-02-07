@@ -39,7 +39,7 @@
   },
 
   "thread_messages": {
-    "pr_created": "👋 This thread is for discussing **PR #{{prNumber}}: {{title}}**.\n\nPlease keep all PR-related conversation here or in the GitHub PR itself to maintain context.\n\n[View PR on GitHub]({{url}})",
+    "pr_created": "👋 {{authorMention}} This thread is for discussing **PR #{{prNumber}}: {{title}}**.\n\nPlease keep all PR-related conversation here or in the GitHub PR itself to maintain context.\n\n[View PR on GitHub]({{url}}){{reviewerReminder}}",
     "reviewer_added": "📢 {{reviewerMention}} has been added as a reviewer for this PR.\n\nPlease review when you have a chance!",
     "reviewer_removed": "{{reviewerMention}} has been removed as a reviewer.",
     "review_approved": "✅ {{reviewerMention}} approved this PR!{{commentSuffix}}\n\n{{authorMention}}",

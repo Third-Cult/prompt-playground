@@ -126,7 +126,9 @@ describe('PRCoordinator', () => {
       expect(mockNotificationManager.prepareThreadCreatedMessage).toHaveBeenCalledWith(
         123,
         'Add feature X',
-        'https://github.com/owner/repo/pull/123'
+        'https://github.com/owner/repo/pull/123',
+        'test-author',
+        []
       );
 
       expect(mockDiscordService.sendThreadMessage).toHaveBeenCalledWith(
