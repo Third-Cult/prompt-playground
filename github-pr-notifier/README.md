@@ -220,7 +220,7 @@ yarn start
 
 ### Documentation
 
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide (single & multi-environment)
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide (from zero to production, 60 min)
 - **[E2E_TESTING.md](./E2E_TESTING.md)** - Automated testing guide (110 tests)
 - **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Pre-deployment checklist
 

@@ -1,29 +1,269 @@
 # Deployment Guide
 
-Complete guide for deploying GitHub PR Notifier in single or multi-environment configurations.
+Complete guide for deploying GitHub PR Notifier from scratch or with existing prerequisites.
+
+**🆕 Fresh machine?** Start with [Prerequisites & Setup](#prerequisites--setup) (45-60 min total).
+
+**⚡ Already have prerequisites?** Skip to [Quick Start](#quick-start-single-environment) (15 min).
 
 ---
 
 ## Table of Contents
 
-1. [Quick Start (Single Environment)](#quick-start-single-environment)
-2. [Multi-Environment Setup](#multi-environment-setup)
-3. [CloudFlare Tunnel Setup](#cloudflare-tunnel-setup)
-4. [GitHub Webhook Configuration](#github-webhook-configuration)
-5. [Monitoring & Maintenance](#monitoring--maintenance)
-6. [Troubleshooting](#troubleshooting)
+1. [Prerequisites & Setup](#prerequisites--setup) *(Skip if you already have tools installed)*
+   - [Install Development Tools](#install-development-tools)
+   - [Create Discord Bot](#create-discord-bot)
+   - [Clone Repository](#clone-repository)
+2. [Quick Start (Single Environment)](#quick-start-single-environment)
+3. [Multi-Environment Setup](#multi-environment-setup)
+4. [CloudFlare Tunnel Setup](#cloudflare-tunnel-setup)
+5. [GitHub Webhook Configuration](#github-webhook-configuration)
+6. [Monitoring & Maintenance](#monitoring--maintenance)
+7. [Troubleshooting](#troubleshooting)
+
+---
+
+## Prerequisites & Setup
+
+*Skip this section if you already have Git, Node.js, Yarn, PM2, CloudFlare Tunnel, and a Discord bot configured.*
+
+### Install Development Tools
+
+#### 1. Install Git (5 min)
+
+<details>
+<summary><b>Windows</b></summary>
+
+```bash
+# Download and install from:
+https://git-scm.com/download/win
+
+# Or use winget:
+winget install Git.Git
+
+# Verify installation:
+git --version
+# Should show: git version 2.x.x
+```
+</details>
+
+<details>
+<summary><b>Mac</b></summary>
+
+```bash
+# Install Homebrew first (if not installed):
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install Git:
+brew install git
+
+# Verify:
+git --version
+```
+</details>
+
+<details>
+<summary><b>Linux (Ubuntu/Debian)</b></summary>
+
+```bash
+sudo apt update
+sudo apt install git -y
+git --version
+```
+</details>
+
+#### 2. Install Node.js v20+ (5 min)
+
+<details>
+<summary><b>Windows</b></summary>
+
+```bash
+# Download and install from:
+https://nodejs.org/en/download/
+
+# Or use winget:
+winget install OpenJS.NodeJS.LTS
+
+# Verify installation:
+node --version  # Should show: v20.x.x or higher
+npm --version   # Should show: 10.x.x or higher
+```
+</details>
+
+<details>
+<summary><b>Mac</b></summary>
+
+```bash
+# Using Homebrew:
+brew install node@20
+
+# Verify:
+node --version
+npm --version
+```
+</details>
+
+<details>
+<summary><b>Linux (Ubuntu/Debian)</b></summary>
+
+```bash
+# Install via NodeSource:
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Verify:
+node --version
+npm --version
+```
+</details>
+
+#### 3. Install Yarn (2 min)
+
+```bash
+# Install Yarn globally using npm:
+npm install -g yarn
+
+# Verify installation:
+yarn --version
+# Should show: 1.22.x or higher
+```
+
+#### 4. Install PM2 (2 min)
+
+```bash
+# Install PM2 globally:
+npm install -g pm2
+
+# Verify installation:
+pm2 --version
+# Should show: 5.x.x or higher
+```
+
+#### 5. Install CloudFlare Tunnel (5 min)
+
+<details>
+<summary><b>Windows</b></summary>
+
+```bash
+# Download from:
+https://github.com/cloudflare/cloudflared/releases
+
+# Download cloudflared-windows-amd64.exe
+# Rename to cloudflared.exe
+# Move to C:\Windows\System32\ (or add to PATH)
+
+# Verify:
+cloudflared --version
+```
+</details>
+
+<details>
+<summary><b>Mac</b></summary>
+
+```bash
+# Using Homebrew:
+brew install cloudflared
+
+# Verify:
+cloudflared --version
+```
+</details>
+
+<details>
+<summary><b>Linux</b></summary>
+
+```bash
+# Download and install:
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
+sudo chmod +x /usr/local/bin/cloudflared
+
+# Verify:
+cloudflared --version
+```
+</details>
+
+---
+
+### Create Discord Bot
+
+#### Step 1: Create Bot Application (10 min)
+
+1. **Go to Discord Developer Portal**: https://discord.com/developers/applications
+   - Click "New Application"
+   - Name it: "GitHub PR Notifier"
+   - Click "Create"
+
+2. **Create Bot User**:
+   - In left sidebar, click "Bot"
+   - Click "Add Bot" → "Yes, do it!"
+   - Under "Privileged Gateway Intents":
+     - ✅ Enable "SERVER MEMBERS INTENT"
+     - ✅ Enable "MESSAGE CONTENT INTENT" (optional)
+   - Click "Save Changes"
+
+3. **Copy Bot Token**:
+   - Click "Reset Token" → "Yes, do it!"
+   - Copy the token (save it securely)
+   - **⚠️ NEVER share this token publicly!**
+
+4. **Invite Bot to Your Server**:
+   - In left sidebar, click "OAuth2" → "URL Generator"
+   - **Scopes**: Check `bot`
+   - **Bot Permissions**: Check these:
+     - ✅ Send Messages
+     - ✅ Send Messages in Threads
+     - ✅ Create Public Threads
+     - ✅ Manage Threads
+     - ✅ Embed Links
+     - ✅ Add Reactions
+     - ✅ Read Message History
+   - Copy the generated URL and open in browser
+   - Select your Discord server → "Authorize"
+
+5. **Create Discord Channels** (for multi-environment):
+   - Create three text channels:
+     - `#pr-notifications-dev`
+     - `#pr-notifications-staging`
+     - `#pr-notifications` (production)
+
+6. **Get Channel IDs**:
+   - In Discord: Settings → Advanced → Enable "Developer Mode"
+   - Right-click each channel → "Copy Channel ID"
+   - Save these IDs for configuration
+
+---
+
+### Clone Repository
+
+```bash
+# Navigate to where you want the project:
+cd ~  # Or C:\Users\YourName\ on Windows
+
+# Clone the repository:
+git clone https://github.com/your-username/prompt-playground.git
+
+# Navigate to the bot directory:
+cd prompt-playground/github-pr-notifier
+
+# Verify you're in the right place:
+ls  # Should see package.json, src/, etc.
+```
 
 ---
 
 ## Quick Start (Single Environment)
 
-Get production running in 15 minutes.
+Get production running in 15 minutes (assumes prerequisites installed above).
 
-### Prerequisites
+### Prerequisites Checklist
 
-- Node.js v20+ installed
-- Yarn installed
-- PM2 installed: `npm install -g pm2`
+- ✅ Node.js v20+ installed
+- ✅ Yarn installed
+- ✅ PM2 installed
+- ✅ CloudFlare Tunnel installed
+- ✅ Discord bot created and invited to server
+- ✅ Repository cloned
 
 ### Step 1: Install & Build (2 min)
 
