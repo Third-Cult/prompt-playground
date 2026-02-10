@@ -4,6 +4,7 @@ import { NotificationManager } from './managers/NotificationManager';
 import { UserMappingManager } from './managers/UserMappingManager';
 import { PRData, PRStateData, PRStatus } from '../../models/PRState';
 import { logger } from '../../utils/logger';
+import { extractPRData, extractReviewers, isPRMerged } from '../../utils/githubPayloadParser';
 
 /**
  * PRCoordinator
@@ -29,8 +30,28 @@ export class PRCoordinator {
    * Handle PR opened event
    */
   async handlePROpened(prData: PRData, reviewers: string[]): Promise<void> {
+    // Atomically check and claim this PR creation to prevent duplicates
+    const sizeBefore = this.creatingPRs.size;
+    this.creatingPRs.add(prData.number);
+    const sizeAfter = this.creatingPRs.size;
+    
+    // If size didn't change, another thread already claimed it
+    if (sizeBefore === sizeAfter) {
+      logger.warn(`PR #${prData.number} is already being created by another thread, skipping duplicate`);
+      // Wait for the other thread to finish
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return;
+    }
+
     try {
       logger.info(`Handling PR opened: #${prData.number} - ${prData.title}`);
+
+      // Double-check if PR already exists (might have been created while we were waiting)
+      const existingState = await this.stateService.getPRState(prData.number);
+      if (existingState) {
+        logger.warn(`PR #${prData.number} already exists in state, skipping duplicate creation`);
+        return;
+      }
 
       // Prepare notification content
       const messageContent = this.notificationManager.preparePRCreatedNotification(
@@ -95,20 +116,23 @@ export class PRCoordinator {
     } catch (error) {
       logger.error(`Failed to handle PR opened: ${(error as Error).message}`);
       throw error;
+    } finally {
+      // Remove from creating set
+      this.creatingPRs.delete(prData.number);
     }
   }
 
   /**
    * Handle PR converted to draft
    */
-  async handlePRConvertedToDraft(prNumber: number): Promise<void> {
+  async handlePRConvertedToDraft(prNumber: number, payload: any): Promise<void> {
     try {
       logger.info(`Handling PR converted to draft: #${prNumber}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      // Ensure PR is tracked
+      const state = await this.ensurePRTracked(prNumber, payload);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
-        return;
+        return; // PR is closed/merged or failed to create
       }
 
       // Update state
@@ -145,14 +169,14 @@ export class PRCoordinator {
   /**
    * Handle PR marked ready for review
    */
-  async handlePRReadyForReview(prNumber: number): Promise<void> {
+  async handlePRReadyForReview(prNumber: number, payload: any): Promise<void> {
     try {
       logger.info(`Handling PR ready for review: #${prNumber}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      // Ensure PR is tracked
+      const state = await this.ensurePRTracked(prNumber, payload);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
-        return;
+        return; // PR is closed/merged or failed to create
       }
 
       // Update state
@@ -300,14 +324,14 @@ export class PRCoordinator {
   /**
    * Handle PR reopened
    */
-  async handlePRReopened(prNumber: number): Promise<void> {
+  async handlePRReopened(prNumber: number, payload: any): Promise<void> {
     try {
       logger.info(`Handling PR reopened: #${prNumber}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      // Ensure PR is tracked
+      const state = await this.ensurePRTracked(prNumber, payload);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
-        return;
+        return; // PR is closed/merged or failed to create
       }
 
       // Reset status to allow recalculation (don't keep "closed"/"merged")
@@ -403,14 +427,14 @@ export class PRCoordinator {
   /**
    * Handle reviewer added to PR
    */
-  async handleReviewerAdded(prNumber: number, reviewer: string): Promise<void> {
+  async handleReviewerAdded(prNumber: number, reviewer: string, payload: any): Promise<void> {
     try {
       logger.info(`Handling reviewer added: #${prNumber}, reviewer: ${reviewer}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      // Ensure PR is tracked
+      const state = await this.ensurePRTracked(prNumber, payload);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
-        return;
+        return; // PR is closed/merged or failed to create
       }
 
       // Add reviewer to state if not already present
@@ -480,14 +504,14 @@ export class PRCoordinator {
   /**
    * Handle reviewer removed from PR
    */
-  async handleReviewerRemoved(prNumber: number, reviewer: string): Promise<void> {
+  async handleReviewerRemoved(prNumber: number, reviewer: string, payload: any): Promise<void> {
     try {
       logger.info(`Handling reviewer removed: #${prNumber}, reviewer: ${reviewer}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      // Ensure PR is tracked
+      const state = await this.ensurePRTracked(prNumber, payload);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
-        return;
+        return; // PR is closed/merged or failed to create
       }
 
       // Check if this reviewer has already submitted a review
@@ -567,15 +591,24 @@ export class PRCoordinator {
       state: 'approved' | 'changes_requested' | 'commented' | 'dismissed';
       comment: string;
       submittedAt: Date;
-    }
+    },
+    payload: any
   ): Promise<void> {
     try {
       logger.info(`Handling review submitted: #${prNumber}, reviewer: ${reviewData.reviewer}, state: ${reviewData.state}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      // Ensure PR is tracked
+      const state = await this.ensurePRTracked(prNumber, payload);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
-        return;
+        return; // PR is closed/merged or failed to create
+      }
+
+      // Add reviewer to reviewers list if they're not already there and submitted a meaningful review
+      // (approved or changes_requested, not just commented)
+      const isNewReviewer = !state.reviewers.includes(reviewData.reviewer);
+      if (isNewReviewer && (reviewData.state === 'approved' || reviewData.state === 'changes_requested')) {
+        state.reviewers.push(reviewData.reviewer);
+        logger.info(`Added ${reviewData.reviewer} to reviewers list (submitted ${reviewData.state} review)`);
       }
 
       // Update or add review in state
@@ -666,6 +699,27 @@ export class PRCoordinator {
         if (threadMessage) {
           await this.discordService.sendThreadMessage(state.discordThreadId, threadMessage);
         }
+
+        // If this reviewer was added to the list (wasn't officially assigned), add them to the thread
+        if (isNewReviewer && (reviewData.state === 'approved' || reviewData.state === 'changes_requested')) {
+          const discordUserId = this.userMappingManager.getDiscordUserId(reviewData.reviewer);
+          
+          if (discordUserId) {
+            try {
+              await this.discordService.addThreadMember(state.discordThreadId, discordUserId);
+              
+              // Track the member
+              if (!state.addedThreadMembers.includes(discordUserId)) {
+                state.addedThreadMembers.push(discordUserId);
+              }
+              
+              logger.info(`Added ${reviewData.reviewer} (${discordUserId}) to thread (auto-added as reviewer)`);
+            } catch (error) {
+              // Log but don't fail - the @mention in the message will notify them anyway
+              logger.warn(`Could not add ${reviewData.reviewer} to thread: ${(error as Error).message}`);
+            }
+          }
+        }
       }
 
       // Save updated state
@@ -689,15 +743,16 @@ export class PRCoordinator {
       state: 'approved' | 'changes_requested' | 'commented' | 'dismissed';
       comment: string;
       submittedAt: Date;
-    }
+    },
+    payload: any
   ): Promise<void> {
     try {
       logger.info(`Handling review dismissed: #${prNumber}, reviewer: ${reviewData.reviewer}`);
 
-      const state = await this.stateService.getPRState(prNumber);
+      // Ensure PR is tracked
+      const state = await this.ensurePRTracked(prNumber, payload);
       if (!state) {
-        logger.warn(`PR #${prNumber} not found in state, skipping`);
-        return;
+        return; // PR is closed/merged or failed to create
       }
 
       // Remove review from state
@@ -816,6 +871,73 @@ export class PRCoordinator {
    */
   async getPRState(prNumber: number): Promise<PRStateData | null> {
     return this.stateService.getPRState(prNumber);
+  }
+
+  // Track PRs currently being created to prevent duplicate creation
+  private creatingPRs = new Set<number>();
+
+  /**
+   * Ensure PR is being tracked - if not, create it retroactively from webhook payload
+   * Returns null if PR is already closed/merged (shouldn't track completed PRs)
+   */
+  private async ensurePRTracked(prNumber: number, payload: any): Promise<PRStateData | null> {
+    // Check if already being tracked
+    const existingState = await this.stateService.getPRState(prNumber);
+    if (existingState) {
+      return existingState;
+    }
+
+    // Check if PR is currently being created by handlePROpened
+    if (this.creatingPRs.has(prNumber)) {
+      logger.warn(`PR #${prNumber} is already being created, waiting for completion...`);
+      // Wait for creation to complete
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      const stateAfterWait = await this.stateService.getPRState(prNumber);
+      if (stateAfterWait) {
+        logger.info(`PR #${prNumber} was created by concurrent process`);
+        return stateAfterWait;
+      }
+      // If still not created after wait, this is an error
+      logger.error(`PR #${prNumber} was being created but not found after wait`);
+      return null;
+    }
+
+    // Check if PR is already closed or merged - don't track completed PRs
+    const pr = payload.pull_request;
+    if (!pr) {
+      logger.warn(`Cannot ensure tracking for PR #${prNumber}: missing pull_request in payload`);
+      return null;
+    }
+
+    if (pr.state === 'closed' || isPRMerged(payload)) {
+      logger.info(`PR #${prNumber} is already closed/merged, skipping tracking`);
+      return null;
+    }
+
+    // PR is active but not tracked - create it retroactively
+    logger.info(`PR #${prNumber} not tracked, creating retroactively from webhook data`);
+    
+    try {
+      const prData = extractPRData(payload);
+      const reviewers = extractReviewers(payload);
+      
+      // Call handlePROpened to create Discord message, thread, and state
+      // handlePROpened will handle the locking
+      await this.handlePROpened(prData, reviewers);
+      
+      // Fetch the newly created state
+      const newState = await this.stateService.getPRState(prNumber);
+      if (!newState) {
+        logger.error(`Failed to create state for PR #${prNumber}`);
+        return null;
+      }
+      
+      logger.info(`Successfully created tracking for PR #${prNumber}`);
+      return newState;
+    } catch (error) {
+      logger.error(`Failed to ensure tracking for PR #${prNumber}: ${(error as Error).message}`);
+      return null;
+    }
   }
 
   /**

@@ -134,21 +134,21 @@ async function processWebhook(
       const reviewers = extractReviewers(payload);
       await prCoordinator.handlePROpened(prData, reviewers);
     } else if (isPRConvertedToDraft(payload)) {
-      await prCoordinator.handlePRConvertedToDraft(prNumber);
+      await prCoordinator.handlePRConvertedToDraft(prNumber, payload);
     } else if (isPRReadyForReview(payload)) {
-      await prCoordinator.handlePRReadyForReview(prNumber);
+      await prCoordinator.handlePRReadyForReview(prNumber, payload);
     } else if (isPRClosedEvent(payload)) {
       const closedBy = extractClosedBy(payload);
       const isMerged = isPRMerged(payload);
       await prCoordinator.handlePRClosed(prNumber, closedBy, isMerged);
     } else if (isPRReopenedEvent(payload)) {
-      await prCoordinator.handlePRReopened(prNumber);
+      await prCoordinator.handlePRReopened(prNumber, payload);
     } else if (isReviewRequestedEvent(payload)) {
       const reviewer = extractRequestedReviewer(payload);
-      await prCoordinator.handleReviewerAdded(prNumber, reviewer);
+      await prCoordinator.handleReviewerAdded(prNumber, reviewer, payload);
     } else if (isReviewRequestRemovedEvent(payload)) {
       const reviewer = extractRequestedReviewer(payload);
-      await prCoordinator.handleReviewerRemoved(prNumber, reviewer);
+      await prCoordinator.handleReviewerRemoved(prNumber, reviewer, payload);
     }
   }
 
@@ -158,10 +158,10 @@ async function processWebhook(
     const reviewData = extractReviewData(payload);
 
     if (isReviewDismissed(payload)) {
-      await prCoordinator.handleReviewDismissed(prNumber, reviewData);
+      await prCoordinator.handleReviewDismissed(prNumber, reviewData, payload);
     } else {
       // Handle approved, changes_requested, commented
-      await prCoordinator.handleReviewSubmitted(prNumber, reviewData);
+      await prCoordinator.handleReviewSubmitted(prNumber, reviewData, payload);
     }
   }
 }
