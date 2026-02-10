@@ -16,6 +16,27 @@ Use this checklist to ensure a smooth production deployment.
 - [ ] Dependencies installed (`yarn install`)
 - [ ] Build successful (`yarn build`)
 
+### Windows-Specific Setup (if applicable)
+- [ ] Windows Power Options configured (High Performance mode)
+- [ ] Sleep settings set to "Never"
+- [ ] Hard disk sleep disabled
+- [ ] USB selective suspend disabled
+- [ ] Fast Startup disabled
+- [ ] Windows Update set to Manual or Active Hours configured
+- [ ] CloudFlare Tunnel installed (`cloudflared.exe`)
+- [ ] CloudFlare Tunnel installed as Windows service
+- [ ] CloudFlare Tunnel service running (`Get-Service cloudflared`)
+- [ ] `start-pm2-services.bat` created
+- [ ] Windows Task Scheduler task created for PM2 auto-start
+- [ ] Task Scheduler task configured with:
+  - [ ] "Run whether user is logged on or not"
+  - [ ] "Run with highest privileges"
+  - [ ] Trigger: At startup with 30-second delay
+  - [ ] Network condition: Any connection
+  - [ ] Power: Unchecked "only on AC power"
+- [ ] Task Scheduler task tested manually
+- [ ] System reboot tested (verify services auto-start)
+
 ### Configuration
 - [ ] `.env` file created from `.env.production` template
 - [ ] `GITHUB_WEBHOOK_SECRET` configured (strong 32+ character secret)
@@ -33,14 +54,20 @@ Use this checklist to ensure a smooth production deployment.
 
 ### Discord Bot Setup
 - [ ] Discord bot created in Developer Portal
-- [ ] Bot added to Discord server
-- [ ] Bot permissions configured:
+- [ ] Bot token copied and saved securely
+- [ ] Bot added to Discord server using invite URL
+- [ ] Bot permissions configured (Permission Integer: `534723947584`):
+  - [ ] View Channels
   - [ ] Send Messages
+  - [ ] Send Messages in Threads
+  - [ ] Embed Links
+  - [ ] Read Message History
   - [ ] Create Public Threads
-  - [ ] Manage Threads
+  - [ ] Manage Threads (optional, for auto-adding users to threads)
   - [ ] Add Reactions
-  - [ ] Mention Everyone (for @mentions)
-- [ ] Bot can access target channel
+- [ ] Bot can access target channel(s)
+- [ ] Server Members Intent enabled (in Bot settings)
+- [ ] Message Content Intent enabled (optional, in Bot settings)
 
 ### Testing
 - [ ] All tests pass (`yarn test`)
@@ -198,6 +225,19 @@ Use this checklist to ensure a smooth production deployment.
 | Discord messages not sent | Check `DISCORD_BOT_TOKEN` and bot permissions |
 | High memory usage | Restart: `pm2 restart github-pr-notifier` |
 | Frequent restarts | Check error logs: `pm2 logs github-pr-notifier --err` |
+| "Missing Access" errors | Re-invite bot with correct permissions (see Discord Bot Setup) |
+| Duplicate Discord messages | Check logs for race conditions, ensure using latest code |
+| Reviewers not showing on merge | Check if `handleReviewerRemoved` fix is applied |
+
+### Windows-Specific Issues
+
+| Symptom | Quick Fix |
+|---------|-----------|
+| Services not starting on boot | Check Task Scheduler task, verify 30s delay and network condition |
+| Computer sleeping/turning off | Review Power Options, ensure High Performance mode |
+| Port already in use | `netstat -ano \| findstr :3002` then `taskkill /PID <PID> /F` |
+| CloudFlare Tunnel not working | Check service: `Get-Service cloudflared`, restart if needed |
+| PM2 not found on startup | Verify npm global path is in System PATH, not just User PATH |
 
 ### Emergency Contacts
 

@@ -181,13 +181,20 @@ yarn typecheck
 
 ## Production Deployment
 
-### Single Environment Setup
+### 🪟 Windows 24/7 Server Setup
 
-See **[QUICKSTART.md](./QUICKSTART.md)** for a step-by-step guide to deploy production.
+**Setting up a dedicated Windows machine?** See the comprehensive [Windows 24/7 Server Setup](#windows-247-server-setup) section in [DEPLOYMENT.md](./DEPLOYMENT.md) for complete instructions including:
 
-### Multi-Environment Setup (Dev/Staging/Prod)
+- Power management configuration (prevent sleep)
+- PM2 auto-start with Windows Task Scheduler
+- CloudFlare Tunnel as Windows service
+- Full troubleshooting and maintenance guides
 
-See **[MULTI_ENV_QUICKSTART.md](./MULTI_ENV_QUICKSTART.md)** to run development, staging, and production simultaneously.
+### Quick Start Guides
+
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide with Windows-specific section
+- **[QUICKSTART.md](./QUICKSTART.md)** - Single environment setup (15 min)
+- **[MULTI_ENV_QUICKSTART.md](./MULTI_ENV_QUICKSTART.md)** - Multi-environment setup (Dev/Staging/Prod)
 
 ### With PM2 (Recommended)
 
@@ -220,9 +227,16 @@ yarn start
 
 ### Documentation
 
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide (from zero to production, 60 min)
+#### Setup & Deployment
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide with Windows 24/7 setup
+- **[WINDOWS_SETUP_QUICK_REFERENCE.md](./WINDOWS_SETUP_QUICK_REFERENCE.md)** - Windows commands and troubleshooting
+- **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Pre-deployment checklist with Windows-specific items
+
+#### Testing
 - **[E2E_TESTING.md](./E2E_TESTING.md)** - Automated testing guide (110 tests)
-- **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Pre-deployment checklist
+
+#### Architecture
+- **[DISCORD_PR_BOT_ARCHITECTURE.md](../DISCORD_PR_BOT_ARCHITECTURE.md)** - Detailed architecture documentation
 
 ## Testing
 
