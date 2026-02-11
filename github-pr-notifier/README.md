@@ -87,7 +87,7 @@ Following clean architecture patterns:
 - **Config**: Centralized configuration from environment variables
 - **Utils**: Logging and helper utilities
 
-See [DISCORD_PR_BOT_ARCHITECTURE.md](../DISCORD_PR_BOT_ARCHITECTURE.md) for detailed architecture documentation.
+See [docs/DISCORD_PR_BOT_ARCHITECTURE.md](./docs/DISCORD_PR_BOT_ARCHITECTURE.md) for detailed architecture documentation.
 
 ## Prerequisites
 
@@ -236,7 +236,7 @@ yarn start
 - **[E2E_TESTING.md](./E2E_TESTING.md)** - Automated testing guide (110 tests)
 
 #### Architecture
-- **[DISCORD_PR_BOT_ARCHITECTURE.md](../DISCORD_PR_BOT_ARCHITECTURE.md)** - Detailed architecture documentation
+- **[docs/DISCORD_PR_BOT_ARCHITECTURE.md](./docs/DISCORD_PR_BOT_ARCHITECTURE.md)** - Detailed architecture documentation
 
 ## Testing
 
@@ -464,7 +464,7 @@ Potential future features (not currently planned):
 - **PR Labels**: Display labels in Discord messages
 - **Metrics & Analytics**: Dashboard for PR statistics
 
-See [DISCORD_PR_BOT_ARCHITECTURE.md](../DISCORD_PR_BOT_ARCHITECTURE.md) for architectural details.
+See [docs/DISCORD_PR_BOT_ARCHITECTURE.md](./docs/DISCORD_PR_BOT_ARCHITECTURE.md) for architectural details.
 
 ## Contributing
 

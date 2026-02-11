@@ -15,6 +15,10 @@ dist/
 data/pr-state.json
 data/pr-state.*.json
 
+# User mappings - Contains Discord/GitHub IDs
+config/user-mappings.json
+config/user-mappings.*.json
+
 # Logs
 logs/
 *.log
