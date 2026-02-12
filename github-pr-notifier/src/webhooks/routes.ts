@@ -133,6 +133,9 @@ async function processWebhook(
       const prData = extractPRData(payload);
       const reviewers = extractReviewers(payload);
       await prCoordinator.handlePROpened(prData, reviewers);
+    } else if (payload.action === 'edited') {
+      // Handle PR edited (for issue changes in description)
+      await prCoordinator.handlePREdited(prNumber, payload);
     } else if (isPRConvertedToDraft(payload)) {
       await prCoordinator.handlePRConvertedToDraft(prNumber, payload);
     } else if (isPRReadyForReview(payload)) {

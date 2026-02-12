@@ -16,6 +16,9 @@ export function extractPRData(payload: any): PRData {
     throw new Error('Invalid payload: missing pull_request');
   }
 
+  // Extract linked issues from description
+  const linkedIssues = extractLinkedIssuesFromDescription(pr.body || '');
+
   return {
     number: pr.number,
     title: pr.title,
@@ -27,7 +30,31 @@ export function extractPRData(payload: any): PRData {
     isDraft: pr.draft || false,
     repo: payload.repository.name,
     owner: payload.repository.owner.login,
+    linkedIssues,
   };
+}
+
+/**
+ * Extract linked issues from PR description
+ * Supports: Closes #123, Fixes #456, Resolves #789
+ */
+export function extractLinkedIssuesFromDescription(description: string): string[] {
+  if (!description) {
+    return [];
+  }
+
+  const issues = new Set<string>();
+
+  // Pattern: Closes #123, Fixes #456, Resolves #789, Addresses #101
+  // Case-insensitive
+  const pattern = /\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|address|addresses|addressed)\s+#(\d+)/gi;
+  
+  const matches = description.matchAll(pattern);
+  for (const match of matches) {
+    issues.add(match[1]);
+  }
+
+  return Array.from(issues).sort((a, b) => parseInt(a) - parseInt(b));
 }
 
 /**

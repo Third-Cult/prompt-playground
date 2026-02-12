@@ -1,5 +1,6 @@
 import { IMessageTemplateService } from '../../../services/templates/interfaces/IMessageTemplateService';
 import { UserMappingManager } from './UserMappingManager';
+import { IssueManager } from './IssueManager';
 import { PRData, PRStatus, PRStateData } from '../../../models/PRState';
 import { MessageContent } from '../../../services/discord/interfaces/IDiscordService';
 
@@ -16,7 +17,8 @@ import { MessageContent } from '../../../services/discord/interfaces/IDiscordSer
 export class NotificationManager {
   constructor(
     private templateService: IMessageTemplateService,
-    private userMappingManager: UserMappingManager
+    private userMappingManager: UserMappingManager,
+    private issueManager: IssueManager
   ) {}
 
   /**
@@ -33,6 +35,11 @@ export class NotificationManager {
         ? this.userMappingManager.getDiscordMentions(reviewers)
         : this.templateService.render('warnings', {}).no_reviewers;
 
+    const linkedIssues =
+      prData.linkedIssues && prData.linkedIssues.length > 0
+        ? this.issueManager.formatIssuesForDiscord(prData.linkedIssues, prData.owner, prData.repo)
+        : this.templateService.render('warnings', {}).no_issues;
+
     const status = this.formatStatus('ready_for_review', prData.isDraft);
 
     const rendered = this.templateService.render('pr_created', {
@@ -43,6 +50,7 @@ export class NotificationManager {
       color: this.getStatusColor(prData.isDraft ? 'draft' : 'ready_for_review'),
       branchName: prData.branchName,
       baseBranch: prData.baseBranch,
+      linkedIssues,
       authorMention,
       reviewersMentions,
       status,
@@ -56,10 +64,28 @@ export class NotificationManager {
   /**
    * Prepare thread created message
    */
-  prepareThreadCreatedMessage(prNumber: number, title: string, url: string, author: string, reviewers: string[]): string {
+  prepareThreadCreatedMessage(
+    prNumber: number, 
+    title: string, 
+    url: string, 
+    author: string, 
+    reviewers: string[],
+    linkedIssues: string[]
+  ): string {
     const authorMention = this.userMappingManager.getDiscordMention(author);
     const hasReviewers = reviewers.length > 0;
-    const reviewerReminder = hasReviewers ? '' : '\n\n⚠️ **Don\'t forget to add reviewers to this PR!**';
+    const hasIssues = linkedIssues && linkedIssues.length > 0;
+    
+    // Build reminders for missing items
+    const reminders: string[] = [];
+    if (!hasReviewers) {
+      reminders.push('⚠️ **Don\'t forget to add reviewers to this PR!**');
+    }
+    if (!hasIssues) {
+      reminders.push('⚠️ **Don\'t forget to link an issue to this PR!** Edit your PR description and add keywords like `Closes #123`, `Fixes #456`, or `Resolves #789` to link an issue.');
+    }
+    
+    const reviewerReminder = reminders.length > 0 ? '\n\n' + reminders.join('\n') : '';
     
     const rendered = this.templateService.render('thread_messages', {
       prNumber,
@@ -89,6 +115,11 @@ export class NotificationManager {
         ? this.userMappingManager.getDiscordMentions(reviewers)
         : this.templateService.render('warnings', {}).no_reviewers;
 
+    const linkedIssues =
+      prData.linkedIssues && prData.linkedIssues.length > 0
+        ? this.issueManager.formatIssuesForDiscord(prData.linkedIssues, prData.owner, prData.repo)
+        : this.templateService.render('warnings', {}).no_issues;
+
     const statusKey = isMerged ? 'merged' : 'closed';
     const statusMessages = this.templateService.render('status_messages', {});
     const status = statusMessages[statusKey].replace('{{merger}}', closerMention).replace('{{closer}}', closerMention);
@@ -101,6 +132,7 @@ export class NotificationManager {
       color: this.getStatusColor(isMerged ? 'merged' : 'closed'),
       branchName: prData.branchName,
       baseBranch: prData.baseBranch,
+      linkedIssues,
       authorMention,
       reviewersMentions,
       status,
@@ -159,6 +191,32 @@ export class NotificationManager {
     });
 
     return rendered.reviewer_removed;
+  }
+
+  /**
+   * Prepare thread message when issues are added
+   */
+  prepareThreadIssuesAddedMessage(addedIssues: string[], repoOwner: string, repoName: string): string {
+    const issueLinks = this.issueManager.formatIssuesForDiscord(addedIssues, repoOwner, repoName);
+
+    const rendered = this.templateService.render('thread_messages', {
+      issueLinks,
+    });
+
+    return rendered.issue_added;
+  }
+
+  /**
+   * Prepare thread message when issues are removed
+   */
+  prepareThreadIssuesRemovedMessage(removedIssues: string[], repoOwner: string, repoName: string): string {
+    const issueLinks = this.issueManager.formatIssuesForDiscord(removedIssues, repoOwner, repoName);
+
+    const rendered = this.templateService.render('thread_messages', {
+      issueLinks,
+    });
+
+    return rendered.issue_removed;
   }
 
   /**
@@ -247,6 +305,11 @@ export class NotificationManager {
         ? this.userMappingManager.getDiscordMentions(reviewers)
         : this.templateService.render('warnings', {}).no_reviewers;
 
+    const linkedIssues =
+      prData.linkedIssues && prData.linkedIssues.length > 0
+        ? this.issueManager.formatIssuesForDiscord(prData.linkedIssues, prData.owner, prData.repo)
+        : this.templateService.render('warnings', {}).no_issues;
+
     // Format status with reviewer mentions for approved/changes_requested
     let statusText: string;
     if (status === 'approved' || status === 'changes_requested') {
@@ -265,6 +328,7 @@ export class NotificationManager {
       color: this.getStatusColor(status),
       branchName: prData.branchName,
       baseBranch: prData.baseBranch,
+      linkedIssues,
       authorMention,
       reviewersMentions,
       status: statusText,

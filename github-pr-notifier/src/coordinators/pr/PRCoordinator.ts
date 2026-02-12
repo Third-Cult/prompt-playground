@@ -83,7 +83,8 @@ export class PRCoordinator {
         prData.title,
         prData.url,
         prData.author,
-        reviewers
+        reviewers,
+        prData.linkedIssues || []
       );
 
       await this.discordService.sendThreadMessage(threadId, threadMessage);
@@ -103,6 +104,7 @@ export class PRCoordinator {
         isDraft: prData.isDraft,
         reviewers,
         reviews: [],
+        linkedIssues: prData.linkedIssues || [],
         discordMessageId: messageId,
         discordThreadId: threadId,
         addedThreadMembers: [], // Track members we explicitly add
@@ -134,6 +136,10 @@ export class PRCoordinator {
       if (!state) {
         return; // PR is closed/merged or failed to create
       }
+
+      // Refresh linked issues from payload (body might have changed)
+      const prData = extractPRData(payload);
+      state.linkedIssues = prData.linkedIssues || [];
 
       // Update state
       state.isDraft = true;
@@ -178,6 +184,10 @@ export class PRCoordinator {
       if (!state) {
         return; // PR is closed/merged or failed to create
       }
+
+      // Refresh linked issues from payload (body might have changed)
+      const prData = extractPRData(payload);
+      state.linkedIssues = prData.linkedIssues || [];
 
       // Update state
       state.isDraft = false;
@@ -334,6 +344,10 @@ export class PRCoordinator {
         return; // PR is closed/merged or failed to create
       }
 
+      // Refresh linked issues from payload (body might have changed)
+      const prData = extractPRData(payload);
+      state.linkedIssues = prData.linkedIssues || [];
+
       // Reset status to allow recalculation (don't keep "closed"/"merged")
       state.status = state.isDraft ? 'draft' : 'ready_for_review';
       
@@ -437,6 +451,10 @@ export class PRCoordinator {
         return; // PR is closed/merged or failed to create
       }
 
+      // Refresh linked issues from payload (body might have changed)
+      const prData = extractPRData(payload);
+      state.linkedIssues = prData.linkedIssues || [];
+
       // Add reviewer to state if not already present
       if (!state.reviewers.includes(reviewer)) {
         state.reviewers.push(reviewer);
@@ -513,6 +531,10 @@ export class PRCoordinator {
       if (!state) {
         return; // PR is closed/merged or failed to create
       }
+
+      // Refresh linked issues from payload (body might have changed)
+      const prData = extractPRData(payload);
+      state.linkedIssues = prData.linkedIssues || [];
 
       // Check if this reviewer has already submitted a review
       const hasReviewed = state.reviews.some((r) => r.reviewer === reviewer);
@@ -602,6 +624,10 @@ export class PRCoordinator {
       if (!state) {
         return; // PR is closed/merged or failed to create
       }
+
+      // Refresh linked issues from payload (body might have changed)
+      const prData = extractPRData(payload);
+      state.linkedIssues = prData.linkedIssues || [];
 
       // Add reviewer to reviewers list if they're not already there and submitted a meaningful review
       // (approved or changes_requested, not just commented)
@@ -823,6 +849,106 @@ export class PRCoordinator {
       logger.error(`Failed to handle review dismissed: ${(error as Error).message}`);
       throw error;
     }
+  }
+
+  /**
+   * Handle PR edited (detect issue changes)
+   */
+  async handlePREdited(prNumber: number, payload: any): Promise<void> {
+    try {
+      logger.info(`Handling PR edited: #${prNumber}`);
+
+      // Ensure PR is tracked
+      const state = await this.ensurePRTracked(prNumber, payload);
+      if (!state) {
+        return; // PR is closed/merged or failed to create
+      }
+
+      // Extract new PR data to get updated linkedIssues
+      const newPRData = extractPRData(payload);
+      const oldIssues = state.linkedIssues || [];
+      const newIssues = newPRData.linkedIssues || [];
+
+      // Check if issues changed
+      const issuesChanged = this.issuesHaveChanged(oldIssues, newIssues);
+
+      if (issuesChanged) {
+        logger.info(`Linked issues changed for PR #${prNumber}: ${oldIssues.join(', ')} -> ${newIssues.join(', ')}`);
+
+        // Update state with new issues
+        state.linkedIssues = newIssues;
+        state.updatedAt = new Date();
+
+        // Update Discord message
+        const messageContent = this.notificationManager.prepareReviewStatusNotification(
+          state,
+          state.reviewers,
+          state.status,
+          this.getStatusReviewers(state)
+        );
+
+        if (!state.discordMessageId) {
+          logger.warn(`PR #${prNumber} missing Discord message ID, skipping message update`);
+        } else {
+          await this.discordService.editMessage(
+            this.discordChannelId,
+            state.discordMessageId,
+            messageContent
+          );
+        }
+
+        // Post thread messages for added/removed issues
+        if (!state.discordThreadId) {
+          logger.warn(`PR #${prNumber} missing Discord thread ID, skipping thread messages`);
+        } else {
+          // Detect added issues
+          const addedIssues = newIssues.filter((issue) => !oldIssues.includes(issue));
+          if (addedIssues.length > 0) {
+            const threadMessage = this.notificationManager.prepareThreadIssuesAddedMessage(
+              addedIssues,
+              state.owner,
+              state.repo
+            );
+            await this.discordService.sendThreadMessage(state.discordThreadId, threadMessage);
+          }
+
+          // Detect removed issues
+          const removedIssues = oldIssues.filter((issue) => !newIssues.includes(issue));
+          if (removedIssues.length > 0) {
+            const threadMessage = this.notificationManager.prepareThreadIssuesRemovedMessage(
+              removedIssues,
+              state.owner,
+              state.repo
+            );
+            await this.discordService.sendThreadMessage(state.discordThreadId, threadMessage);
+          }
+        }
+
+        // Save updated state
+        await this.stateService.savePRState(prNumber, state);
+
+        logger.info(`Successfully handled PR edited with issue changes: #${prNumber}`);
+      } else {
+        logger.debug(`PR #${prNumber} edited but no issue changes detected`);
+      }
+    } catch (error) {
+      logger.error(`Failed to handle PR edited: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if issues have changed (helper for handlePREdited)
+   */
+  private issuesHaveChanged(oldIssues: string[], newIssues: string[]): boolean {
+    if (oldIssues.length !== newIssues.length) {
+      return true;
+    }
+
+    const sortedOld = [...oldIssues].sort();
+    const sortedNew = [...newIssues].sort();
+
+    return sortedOld.some((issue, index) => issue !== sortedNew[index]);
   }
 
   /**

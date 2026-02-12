@@ -15,6 +15,11 @@
           "inline": false
         },
         {
+          "name": "Issues",
+          "value": "{{linkedIssues}}",
+          "inline": false
+        },
+        {
           "name": "Author",
           "value": "{{authorMention}}",
           "inline": true
@@ -35,13 +40,15 @@
       },
       "timestamp": "{{timestamp}}"
     }],
-    "_available_variables": ["title", "prNumber", "url", "description", "color", "branchName", "baseBranch", "authorMention", "reviewersMentions", "status", "repo", "timestamp"]
+    "_available_variables": ["title", "prNumber", "url", "description", "color", "branchName", "baseBranch", "linkedIssues", "authorMention", "reviewersMentions", "status", "repo", "timestamp"]
   },
 
   "thread_messages": {
-    "pr_created": "👋 {{authorMention}} This thread is for discussing **PR #{{prNumber}}: {{title}}**.\n\nPlease keep all PR-related conversation here or in the GitHub PR itself to maintain context.\n\n[View PR on GitHub]({{url}}){{reviewerReminder}}",
+    "pr_created": "👋 {{authorMention}} This thread is for discussing **PR #{{prNumber}}: {{title}}**.\n\nPlease keep all PR-related conversation here or in the GitHub PR itself to maintain context.\n\n<{{url}}>{{reviewerReminder}}",
     "reviewer_added": "📢 {{reviewerMention}} has been added as a reviewer for this PR.\n\nPlease review when you have a chance!",
     "reviewer_removed": "{{reviewerMention}} has been removed as a reviewer.",
+    "issue_added": "🔗 Linked issue added: {{issueLinks}}",
+    "issue_removed": "🔗 Linked issue removed: {{issueLinks}}",
     "review_approved": "✅ {{reviewerMention}} approved this PR!{{commentSuffix}}\n\n{{authorMention}}",
     "review_changes_requested": "🔴 {{reviewerMention}} requested changes on this PR.{{commentSuffix}}\n\n{{authorMention}} Please address the feedback.",
     "review_dismissed": "{{reviewerMention}}'s {{reviewState}} review was dismissed.",
@@ -60,6 +67,7 @@
   },
 
   "warnings": {
-    "no_reviewers": "⚠️ **No reviewers assigned!** Please add reviewers to this PR."
+    "no_reviewers": "⚠️ **No reviewers assigned!** Please add reviewers to this PR.",
+    "no_issues": "⚠️ **No issue linked!** Add an issue reference to your PR description using keywords like `Closes #123`, `Fixes #456`, or `Resolves #789`."
   }
 }

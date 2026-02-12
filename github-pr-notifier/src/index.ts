@@ -28,6 +28,7 @@ import { MessageTemplateService } from './services/templates/MessageTemplateServ
 import { PRCoordinator } from './coordinators/pr/PRCoordinator';
 import { NotificationManager } from './coordinators/pr/managers/NotificationManager';
 import { UserMappingManager } from './coordinators/pr/managers/UserMappingManager';
+import { IssueManager } from './coordinators/pr/managers/IssueManager';
 import { IStateService } from './services/state/interfaces/IStateService';
 import { createServer, startServer } from './webhooks/server';
 import { config, validateConfig, loadUserMappings } from './config/config';
@@ -84,9 +85,11 @@ async function main() {
 
       // Initialize managers
       const userMappingManager = new UserMappingManager(userMappings);
+      const issueManager = new IssueManager();
       const notificationManager = new NotificationManager(
         templateService,
-        userMappingManager
+        userMappingManager,
+        issueManager
       );
 
       // Initialize PRCoordinator

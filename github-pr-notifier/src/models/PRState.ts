@@ -26,6 +26,7 @@ export interface PRStateData {
   isDraft: boolean;
   reviewers: string[]; // GitHub usernames
   reviews: Review[];
+  linkedIssues?: string[]; // Issue numbers (e.g., ["123", "456"]) - optional for backward compatibility
   discordMessageId: string | null;
   discordThreadId: string | null;
   addedThreadMembers: string[]; // Discord user IDs we explicitly added to thread
@@ -58,4 +59,5 @@ export interface PRData {
   isDraft: boolean;
   repo: string;
   owner: string;
+  linkedIssues?: string[]; // Issue numbers (e.g., ["123", "456"]) - optional for backward compatibility
 }
