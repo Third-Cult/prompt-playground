@@ -12,8 +12,7 @@ dist/
 !.env.*.example
 
 # State files - Contains Discord/GitHub IDs
-data/pr-state.json
-data/pr-state.*.json
+data/*
 
 # Logs
 logs/
